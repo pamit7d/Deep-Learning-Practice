@@ -1,0 +1,92 @@
+{
+  "builder_name": "csv",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "csv",
+  "dataset_size": 179193,
+  "description": "",
+  "download_checksums": {
+    "/home/mypc/Desktop/dlp/Week_1/train.csv": {
+      "num_bytes": 61194,
+      "checksum": null
+    },
+    "/home/mypc/Desktop/dlp/Week_1/test.csv": {
+      "num_bytes": 28629,
+      "checksum": null
+    }
+  },
+  "download_size": 89823,
+  "features": {
+    "PassengerId": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "Survived": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "Pclass": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "Name": {
+      "dtype": "large_string",
+      "_type": "Value"
+    },
+    "Sex": {
+      "dtype": "large_string",
+      "_type": "Value"
+    },
+    "Age": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "SibSp": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "Parch": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "Ticket": {
+      "dtype": "large_string",
+      "_type": "Value"
+    },
+    "Fare": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "Cabin": {
+      "dtype": "large_string",
+      "_type": "Value"
+    },
+    "Embarked": {
+      "dtype": "large_string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 269016,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 121726,
+      "num_examples": 891,
+      "dataset_name": "csv"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 57467,
+      "num_examples": 418,
+      "dataset_name": "csv"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}
