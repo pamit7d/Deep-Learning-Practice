@@ -68,13 +68,11 @@ The pair having the **highest score** is merged.
 
 The score is
 
-\[
+$$
 \boxed{
-Score(A,B)=
-\frac{\text{Count}(AB)}
-{\text{Count}(A)\times\text{Count}(B)}
+\text{Score}(A, B) = \frac{\text{Count}(AB)}{\text{Count}(A) \times \text{Count}(B)}
 }
-\]
+$$
 
 where
 

@@ -1329,6 +1329,203 @@ Repeat
 
 ---
 
+# Byte Pair Encoding (BPE) — Deep Dive Walkthrough
+
+## What is BPE?
+
+BPE is a tokenization algorithm. It starts with **individual characters** and repeatedly **merges the most frequent adjacent pair** until it builds a vocabulary of subwords/tokens.
+
+---
+
+## The Input (vocab)
+
+```python
+vocab = {
+    'l o w </w>'      : 5,   # "low"  appears 5 times in corpus
+    'l o w e r </w>'  : 2,   # "lower" appears 2 times
+    'n e w e s t </w>': 6,   # "newest" appears 6 times
+    'w i d e s t </w>': 3    # "widest" appears 3 times
+}
+```
+
+Each word is **pre-split into characters separated by spaces**.
+`</w>` is a special **end-of-word marker** (so we know where words end after merging).
+
+So `"low"` becomes `"l o w </w>"` — 4 symbols.
+
+---
+
+## Iteration 1
+
+### Step 1 — `get_stats(vocab)` counts all adjacent pairs
+
+It loops over every word and its frequency, splits on spaces to get symbols, then counts every neighboring pair weighted by frequency:
+
+```
+Word: 'l o w </w>'  (freq=5)
+  → pairs: (l,o)+=5, (o,w)+=5, (w,</w>)+=5
+
+Word: 'l o w e r </w>'  (freq=2)
+  → pairs: (l,o)+=2, (o,w)+=2, (w,e)+=2, (e,r)+=2, (r,</w>)+=2
+
+Word: 'n e w e s t </w>'  (freq=6)
+  → pairs: (n,e)+=6, (e,w)+=6, (w,e)+=6, (e,s)+=6, (s,t)+=6, (t,</w>)+=6
+
+Word: 'w i d e s t </w>'  (freq=3)
+  → pairs: (w,i)+=3, (i,d)+=3, (d,e)+=3, (e,s)+=3, (s,t)+=3, (t,</w>)+=3
+```
+
+**Final pair counts:**
+
+```
+(l, o)     → 5+2 = 7
+(o, w)     → 5+2 = 7
+(w, </w>)  → 5
+(e, s)     → 6+3 = 9   ✅ WINNER
+(s, t)     → 6+3 = 9   (tie, but e,s picked first)
+(t, </w>)  → 6+3 = 9
+(e, w)     → 6
+(w, e)     → 2+6 = 8
+...
+```
+
+### Step 2 — `best = ('e', 's')` (freq=9)
+
+### Step 3 — `merge_vocab(('e','s'), vocab)`
+
+The regex finds `e s` **as whole tokens** (not inside other combos) and replaces with `es`:
+
+```
+'l o w </w>'       → 'l o w </w>'        (no 'e s' here)
+'l o w e r </w>'   → 'l o w e r </w>'    (no 'e s' here)
+'n e w e s t </w>' → 'n e w es t </w>'   ✅ merged!
+'w i d e s t </w>' → 'w i d es t </w>'   ✅ merged!
+```
+
+**Vocab after Iteration 1:**
+
+```python
+{
+    'l o w </w>'      : 5,
+    'l o w e r </w>'  : 2,
+    'n e w es t </w>' : 6,   # ← changed
+    'w i d es t </w>' : 3    # ← changed
+}
+```
+
+**Printed:** `('e', 's')`
+
+---
+
+## Iteration 2
+
+### Step 1 — `get_stats()` on updated vocab
+
+```
+Word: 'l o w </w>'  (freq=5)
+  → (l,o)+=5, (o,w)+=5, (w,</w>)+=5
+
+Word: 'l o w e r </w>'  (freq=2)
+  → (l,o)+=2, (o,w)+=2, (w,e)+=2, (e,r)+=2, (r,</w>)+=2
+
+Word: 'n e w es t </w>'  (freq=6)
+  → (n,e)+=6, (e,w)+=6, (w,es)+=6, (es,t)+=6, (t,</w>)+=6
+
+Word: 'w i d es t </w>'  (freq=3)
+  → (w,i)+=3, (i,d)+=3, (d,es)+=3, (es,t)+=3, (t,</w>)+=3
+```
+
+**Key counts:**
+
+```
+(es, t)    → 6+3 = 9   ✅ WINNER
+(t, </w>)  → 6+3 = 9   (tie)
+(l, o)     → 5+2 = 7
+(o, w)     → 5+2 = 7
+```
+
+### Step 2 — `best = ('es', 't')` (freq=9)
+
+### Step 3 — merge `es t` → `est`
+
+```
+'l o w </w>'       → unchanged
+'l o w e r </w>'   → unchanged
+'n e w es t </w>'  → 'n e w est </w>'   ✅
+'w i d es t </w>'  → 'w i d est </w>'   ✅
+```
+
+**Vocab after Iteration 2:**
+
+```python
+{
+    'l o w </w>'      : 5,
+    'l o w e r </w>'  : 2,
+    'n e w est </w>'  : 6,   # ← changed
+    'w i d est </w>'  : 3    # ← changed
+}
+```
+
+**Printed:** `('es', 't')`
+
+---
+
+## Iteration 3
+
+### `get_stats()` key counts:
+
+```
+(l, o)       → 7
+(o, w)       → 7
+(w, </w>)    → 5
+(est, </w>)  → 6+3 = 9   ✅ WINNER
+(w, est)     → 6
+(d, est)     → 3
+```
+
+### `best = ('est', '</w>')` → merge into `est</w>`
+
+```
+'n e w est </w>'  → 'n e w est</w>'
+'w i d est </w>'  → 'w i d est</w>'
+```
+
+**Vocab after Iteration 3:**
+
+```python
+{
+    'l o w </w>'       : 5,
+    'l o w e r </w>'   : 2,
+    'n e w est</w>'    : 6,   # ← 'est</w>' is now one token!
+    'w i d est</w>'    : 3
+}
+```
+
+**Printed:** `('est', '</w>')`
+
+---
+
+## Summary of What's Happening
+
+```
+Start:   l o w e s t </w>   (7 separate tokens)
+Iter 1:  e + s  → es
+Iter 2:  es + t → est
+Iter 3:  est + </w> → est</w>   (a complete subword unit!)
+...
+```
+
+| Iteration | Merged Pair    | Why?                                               |
+| --------- | -------------- | -------------------------------------------------- |
+| 1         | `e` + `s`      | most frequent adjacent pair (freq=9)               |
+| 2         | `es` + `t`     | previously merged `es` now pairs with `t` (freq=9) |
+| 3         | `est` + `</w>` | `est` at end-of-word is very common (freq=9)       |
+
+BPE essentially **learns frequent subwords** (`est`, `low`, `er`, etc.) from the corpus — which is exactly how modern tokenizers like GPT's **tiktoken** work!
+
+
+---
+
 # Line-by-Line Explanation
 
 ## Import Libraries
@@ -1804,6 +2001,35 @@ Example
 ---
 
 ### Find best pair
+```python
+#General syntax:
+
+max(iterable, key=function)
+
+```
+
+Python does this internally:
+
+```
+For each item
+
+↓
+
+Apply function(item)
+
+↓
+
+Compare the returned values
+
+↓
+
+Return the original item having the largest returned value
+```
+
+
+```python
+max(dictionary, key=dictionary.get) # "Return the dictionary key whose associated value is the largest."
+```
 
 ```python
 best = max(pairs, key=pairs.get)

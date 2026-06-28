@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L8: Wrap it with PreTrained Tokenizer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d2e;
+            --surface2: #222640;
+            --accent: #7c6af7;
+            --accent2: #4fc3f7;
+            --green: #43d9ad;
+            --yellow: #ffd166;
+            --red: #ff6b6b;
+            --text: #e2e8f0;
+            --muted: #8892a4;
+            --border: #2d3154;
+            --code-bg: #11131f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            padding: 0 0 60px;
+        }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 60%);
+            border-bottom: 2px solid var(--accent);
+            padding: 36px 48px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(124, 106, 247, 0.15) 0%, transparent 70%);
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(124, 106, 247, 0.15);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        header p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        header p span {
+            color: var(--accent2);
+            font-weight: 500;
+        }
+
+        /* MAIN LAYOUT */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        /* SECTION */
+        .section {
+            margin-top: 44px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .section-title .num {
+            background: var(--accent);
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 6px;
+        }
+
+        .section-title h2 {
+            font-size: 19px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* CONCEPT CARD */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px 26px;
+            margin-bottom: 16px;
+        }
+
+        .card p {
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .card p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* PROFESSOR QUOTE */
+        .prof-quote {
+            background: rgba(79, 195, 247, 0.07);
+            border-left: 3px solid var(--accent2);
+            border-radius: 0 10px 10px 0;
+            padding: 14px 18px;
+            margin: 14px 0;
+            color: #b0d8f5;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .prof-quote strong {
+            font-style: normal;
+            color: var(--accent2);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* CODE BLOCK */
+        .code-wrap {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin: 14px 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: #0d0f1a;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-header span {
+            font-size: 11px;
+            color: var(--muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .code-header .lang {
+            background: rgba(124, 106, 247, 0.2);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        pre {
+            padding: 18px 20px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .kw {
+            color: #c792ea;
+        }
+
+        .fn {
+            color: #82aaff;
+        }
+
+        .str {
+            color: #c3e88d;
+        }
+
+        .cm {
+            color: #546e7a;
+            font-style: italic;
+        }
+
+        .num {
+            color: #f78c6c;
+        }
+
+        .key {
+            color: var(--accent2);
+        }
+
+        /* OUTPUT BLOCK */
+        .output {
+            background: #0a0c15;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--green);
+            margin: 8px 0 14px;
+            overflow-x: auto;
+        }
+
+        /* EXPLANATION LIST */
+        .explain-list {
+            list-style: none;
+            margin: 10px 0;
+        }
+
+        .explain-list li {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(45, 49, 84, 0.5);
+            font-size: 14px;
+        }
+
+        .explain-list li:last-child {
+            border-bottom: none;
+        }
+
+        .explain-list li .icon {
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            background: rgba(124, 106, 247, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .explain-list li code {
+            background: rgba(255, 255, 255, 0.07);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--yellow);
+        }
+
+        /* KEY CONCEPT BOX */
+        .key-box {
+            background: rgba(67, 217, 173, 0.06);
+            border: 1px solid rgba(67, 217, 173, 0.25);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 14px 0;
+        }
+
+        .key-box .kb-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--green);
+            margin-bottom: 8px;
+        }
+
+        .key-box p {
+            font-size: 14px;
+            color: #c8e6c9;
+        }
+
+        .key-box code {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--yellow);
+        }
+
+        /* WARNING BOX */
+        .warn-box {
+            background: rgba(255, 107, 107, 0.07);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin: 14px 0;
+            font-size: 13px;
+            color: #ffb3b3;
+        }
+
+        .warn-box .wb-title {
+            font-weight: 700;
+            color: var(--red);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        /* COMPARISON TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 13px;
+        }
+
+        th {
+            background: var(--surface2);
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        td code {
+            background: rgba(255, 255, 255, 0.07);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--yellow);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* DIVIDER */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 36px 0;
+        }
+
+        /* SUMMARY CHIPS */
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 14px 0;
+        }
+
+        .chip {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 12px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .chip.green {
+            border-color: var(--green);
+            color: var(--green);
+            background: rgba(67, 217, 173, 0.07);
+        }
+
+        .chip.purple {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(124, 106, 247, 0.08);
+        }
+
+        .chip.blue {
+            border-color: var(--accent2);
+            color: var(--accent2);
+            background: rgba(79, 195, 247, 0.08);
+        }
+
+        /* FOOTER */
+        footer {
+            margin-top: 60px;
+            border-top: 1px solid var(--border);
+            padding: 24px 48px;
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="badge">IIT Madras · B.S. Degree Programme</div>
+        <h1>L8: Wrap it with PreTrained Tokenizer</h1>
+        <p>Topic: <span>Packaging the tokenizer for model input using HuggingFace Transformers</span></p>
+    </header>
+
+    <div class="container">
+
+        <!-- SECTION 1: WHY -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">01</span>
+                <h2>Why do we need PreTrainedTokenizer?</h2>
+            </div>
+            <div class="card">
+                <p>After training a tokenizer (e.g., BPE, WordPiece), the goal is not just to have a tokenizer — you
+                    want to <strong>train a model</strong> (GPT-style or BERT-style). The tokenizer's job is to convert
+                    raw text into a sequence of numbers the model can consume.</p>
+                <p>But the model needs more than just token IDs. It needs:</p>
+                <ul class="explain-list">
+                    <li><span class="icon">🔑</span>
+                        <div><code>input_ids</code> — the numeric token IDs for each word/subword</div>
+                    </li>
+                    <li><span class="icon">🎭</span>
+                        <div><code>attention_mask</code> — tells the model which tokens to attend to (1 = attend, 0 =
+                            ignore padding)</div>
+                    </li>
+                    <li><span class="icon">🏷️</span>
+                        <div><code>token_type_ids</code> — for sentence-pair tasks (e.g., BERT), distinguishes sentence
+                            A (0) from sentence B (1)</div>
+                    </li>
+                    <li><span class="icon">❓</span>
+                        <div>Special tokens: <code>[UNK]</code> for unknown words, <code>[PAD]</code> for padding,
+                            <code>[CLS]</code> and <code>[SEP]</code> if using BERT</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="prof-quote">
+                <strong>Prof. said</strong>
+                "The tokenizer is just to feed inputs to the model — it makes it easier to convert your text data into a
+                sequence of numbers which can then be fed to the model. The model might want to have some more
+                information — what to use for unknown, whether to use padding or not. So all of this you could now pack
+                into one class."
+            </div>
+
+            <div class="key-box">
+                <div class="kb-title">🔑 Core Idea</div>
+                <p><code>PreTrainedTokenizer</code> is a <strong>wrapper</strong> around your trained tokenizer that
+                    packages all the model-specific configuration in one reusable object. You train the tokenizer once,
+                    save it as a <code>.json</code> file, then load it into this class.</p>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 2: ENCODING RECAP -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">02</span>
+                <h2>Recall: tokenizer.encode() and its Encoding object</h2>
+            </div>
+            <div class="card">
+                <p>When you call <code>tokenizer.encode(text)</code>, it returns an <strong>Encoding</strong> object
+                    with many attributes:</p>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[59] encoding from raw tokenizer</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre><span class="kw">encoding</span> = tokenizer.<span class="fn">encode</span>(text)
+<span class="fn">print</span>(encoding)</pre>
+            </div>
+
+            <div class="output">Encoding(num_tokens=16, attributes=[ids, type_ids, tokens, offsets, attention_mask,
+                special_tokens_mask, overflowing])</div>
+
+            <p style="font-size:14px; margin-top:8px; color: var(--muted);">The <code>Encoding</code> object has all
+                these fields, but iterating over each sample in a batch to manually extract them is tedious. That's
+                where <code>PreTrainedTokenizer</code> saves the day.</p>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 3: CREATING PT_TOKENIZER -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">03</span>
+                <h2>Creating PreTrainedTokenizerFast</h2>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[60] Import</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre><span class="kw">from</span> transformers <span class="kw">import</span> <span class="fn">PreTrainedTokenizerFast</span></pre>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[61] Instantiate the wrapper</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre>pt_tokenizer = <span class="fn">PreTrainedTokenizerFast</span>(
+    tokenizer_file=<span class="str">'hopper.json'</span>,  <span class="cm"># your trained & saved tokenizer</span>
+    unk_token=<span class="str">'[UNK]'</span>,              <span class="cm"># token for unknown words</span>
+    pad_token=<span class="str">'[PAD]'</span>,              <span class="cm"># token for padding sequences</span>
+    model_input_names=[<span class="str">"input_ids"</span>,<span class="str">"token_type_ids"</span>,<span class="str">"attention_mask"</span>],
+)</pre>
+            </div>
+
+            <div class="warn-box">
+                <div class="wb-title">⚠️ FutureWarning (just a warning, not an error)</div>
+                You may see: <em>"clean_up_tokenization_spaces was not set. It will be set to True by default..."</em>
+                — The prof said: <strong>"This is just a warning so don't worry about it."</strong> It has no effect on
+                functionality.
+            </div>
+
+            <div class="card">
+                <p><strong>Line-by-line explanation:</strong></p>
+                <ul class="explain-list">
+                    <li><span class="icon">📁</span>
+                        <div><code>tokenizer_file='hopper.json'</code> — loads the tokenizer you already trained and
+                            saved as a JSON file. You don't re-train; you just load.</div>
+                    </li>
+                    <li><span class="icon">❓</span>
+                        <div><code>unk_token='[UNK]'</code> — tells the tokenizer what token to use when it encounters a
+                            word not in its vocabulary.</div>
+                    </li>
+                    <li><span class="icon">🔲</span>
+                        <div><code>pad_token='[PAD]'</code> — the special token inserted when sequences in a batch are
+                            of different lengths, to make them equal-length matrices.</div>
+                    </li>
+                    <li><span class="icon">📋</span>
+                        <div><code>model_input_names</code> — specifies which attributes to return when called. The
+                            model specifically needs these three fields.</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="prof-quote">
+                <strong>Prof. said</strong>
+                "I've already trained the tokenizer and saved it as hopper.json. I'm also mentioning what is the unknown
+                token, what is the pad token, what are the model specific attributes that I care about — the input IDs,
+                the token types, attention mask. I have put all of this into the PreTrainedTokenizer."
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 4: SINGLE TEXT -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">04</span>
+                <h2>Calling it on a single text</h2>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[62] Single sentence → model inputs</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre>model_inputs = pt_tokenizer(text)
+<span class="fn">pprint</span>(model_inputs, compact=<span class="kw">True</span>)</pre>
+            </div>
+
+            <div class="output">{'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                'input_ids': [267, 953, 333, 228, 2531, 138, 203, 154, 53, 102, 21, 459, 14, 64, 203, 384],
+                'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}</div>
+
+            <div class="card">
+                <p>Just calling <code>pt_tokenizer(text)</code> — like a function — now returns a dict with all three
+                    fields. No manual iteration needed.</p>
+                <ul class="explain-list">
+                    <li><span class="icon">🔢</span>
+                        <div><code>input_ids</code> — each number is the vocabulary index for a token. The model reads
+                            these.</div>
+                    </li>
+                    <li><span class="icon">👁️</span>
+                        <div><code>attention_mask</code> — all 1s here because it's a single sentence with no padding;
+                            the model should attend to every token.</div>
+                    </li>
+                    <li><span class="icon">0️⃣</span>
+                        <div><code>token_type_ids</code> — all 0s because this is only one sentence (no sentence B). For
+                            sentence pairs, sentence B tokens would be 1.</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="prof-quote">
+                <strong>Prof. said</strong>
+                "I'm creating the inputs for the model — I'm going to pass it the text and it has generated all the
+                inputs that the model needs: the attention mask, the input IDs, and the token type ID. I've just
+                simplified — I've brought it to a level where now I can directly pass it to the model."
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 5: SENTENCE PAIR -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">05</span>
+                <h2>Calling it on a sentence pair (text + text_pair)</h2>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[63] Sentence pair → token_type_ids shows two segments</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre>model_inputs = pt_tokenizer(text, text_pair=pair)
+<span class="fn">pprint</span>(model_inputs, compact=<span class="kw">True</span>)</pre>
+            </div>
+
+            <div class="output">{'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1],
+                'input_ids': [267, 953, 333, 228, 2531, 138, 203, 154, 53, 102, 21, 459, 14, 64, 203, 384, 211, 247, 46,
+                487, 412, 138, 257, 9],
+                'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]}</div>
+
+            <div class="card">
+                <p>Notice <code>token_type_ids</code> now has <strong>0s for the first sentence</strong> and <strong>1s
+                        for the second sentence</strong>. This is how BERT-style models know which sentence each token
+                    belongs to (for tasks like Next Sentence Prediction or Q&A).</p>
+            </div>
+
+            <div class="key-box">
+                <div class="kb-title">📌 No [CLS] / [SEP] tokens?</div>
+                <p>The output does <em>not</em> show special tokens like <code>[CLS]:2</code> or <code>[SEP]:3</code>
+                    because we used our <strong>custom hopper tokenizer</strong>, not the official
+                    <code>bert_tokenizer</code>. Those special tokens are BERT-specific and would appear only if you
+                    loaded a BERT tokenizer.</p>
+            </div>
+
+            <div class="prof-quote">
+                <strong>Prof. said</strong>
+                "There are no special tokens because you have not mentioned that we needed special tokens — that's why
+                they are not here. But if you use the BERT tokenizer those will also show up here."
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 6: BATCH -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">06</span>
+                <h2>Passing a batch of sentences</h2>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[64] Define batch</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre>batch_text = [
+    <span class="str">'I like the book The Psychology of Money'</span>,
+    <span class="str">'I enjoyed watching the Transformers movie'</span>,
+    <span class="str">'oh! thanks for this'</span>
+]</pre>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[65] Tokenize the batch</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre>model_inputs = pt_tokenizer(batch_text)
+<span class="fn">pprint</span>(model_inputs, compact=<span class="kw">True</span>)</pre>
+            </div>
+
+            <div class="output">{'attention_mask': [[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1]],
+                'input_ids': [[54, 281, 131, 1701, 131, 19478, 153, 1564],
+                [54, 4096, 1443, 131, 7744, 307, 3760],
+                [772, 9, 1767, 200, 254]],
+                'token_type_ids': [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0]]}</div>
+
+            <div class="card">
+                <p>Each of the 3 lists inside <code>attention_mask</code> and <code>input_ids</code> corresponds to one
+                    sentence. Notice the <strong>lengths differ</strong> (8, 7, and 5 tokens) — no padding has been
+                    added yet.</p>
+            </div>
+
+            <div class="prof-quote">
+                <strong>Prof. said</strong>
+                "You get this output for the entire batch. You can see the attention mask has three vectors
+                corresponding to the three sentences that I had. Now here there's no padding which has been done, so you
+                could now enable the padding also."
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 7: PADDING -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">07</span>
+                <h2>Enabling padding for uniform batch matrices</h2>
+            </div>
+
+            <div class="code-wrap">
+                <div class="code-header">
+                    <span>[66] Add padding=True</span>
+                    <span class="lang">Python</span>
+                </div>
+                <pre>model_inputs = pt_tokenizer(batch_text, padding=<span class="kw">True</span>)
+<span class="fn">pprint</span>(model_inputs, compact=<span class="kw">True</span>)</pre>
+            </div>
+
+            <div class="output">{'attention_mask': [[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0],
+                [1, 1, 1, 1, 1, 0, 0, 0]],
+                'input_ids': [[54, 281, 131, 1701, 131, 19478, 153, 1564],
+                [54, 4096, 1443, 131, 7744, 307, 3760, 0],
+                [772, 9, 1767, 200, 254, 0, 0, 0]],
+                'token_type_ids': [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0]]}</div>
+
+            <div class="card">
+                <p>Now all 3 sequences are padded to length 8 (the longest). Key observations:</p>
+                <ul class="explain-list">
+                    <li><span class="icon">🔲</span>
+                        <div>The shorter sequences have <code>0</code>s appended to <code>input_ids</code> — these are
+                            the <code>[PAD]</code> token IDs.</div>
+                    </li>
+                    <li><span class="icon">🚫</span>
+                        <div>Corresponding positions in <code>attention_mask</code> are set to <code>0</code> — the
+                            model is told <strong>not to attend</strong> to these padding tokens. This is crucial for
+                            correct training.</div>
+                    </li>
+                    <li><span class="icon">📐</span>
+                        <div>The output is now a proper <strong>matrix</strong> (3×8), which can be directly fed into a
+                            neural network as a tensor.</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="prof-quote">
+                <strong>Prof. said</strong>
+                "Now you have the right model inputs ready — a nice matrix which has the padding done in it, it has all
+                the input IDs, it tells you where to pay attention, and you can see you are not paying attention to the
+                pads. This is very useful during model training."
+            </div>
+
+            <div class="key-box">
+                <div class="kb-title">⚡ Why attention_mask = 0 for pads matters</div>
+                <p>When a model computes attention scores, padding positions would otherwise distort the weighted
+                    average across tokens. Setting their mask to <code>0</code> tells the self-attention mechanism to
+                    give these positions effectively zero weight — so the model only learns from real content.</p>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 8: SUMMARY TABLE -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">08</span>
+                <h2>Quick Reference: PreTrainedTokenizerFast arguments</h2>
+            </div>
+
+            <table>
+                <tr>
+                    <th>Argument</th>
+                    <th>What it does</th>
+                    <th>Example value</th>
+                </tr>
+                <tr>
+                    <td><code>tokenizer_file</code></td>
+                    <td>Path to the trained tokenizer JSON</td>
+                    <td><code>'hopper.json'</code></td>
+                </tr>
+                <tr>
+                    <td><code>unk_token</code></td>
+                    <td>Token for out-of-vocabulary words</td>
+                    <td><code>'[UNK]'</code></td>
+                </tr>
+                <tr>
+                    <td><code>pad_token</code></td>
+                    <td>Token used to pad shorter sequences</td>
+                    <td><code>'[PAD]'</code></td>
+                </tr>
+                <tr>
+                    <td><code>model_input_names</code></td>
+                    <td>Which attributes to include in output dict</td>
+                    <td><code>["input_ids","token_type_ids","attention_mask"]</code></td>
+                </tr>
+            </table>
+
+            <table style="margin-top:16px">
+                <tr>
+                    <th>Call argument</th>
+                    <th>Default</th>
+                    <th>Effect</th>
+                </tr>
+                <tr>
+                    <td><code>text</code></td>
+                    <td>required</td>
+                    <td>Single text or list of texts (batch)</td>
+                </tr>
+                <tr>
+                    <td><code>text_pair</code></td>
+                    <td>None</td>
+                    <td>Second sentence; sets token_type_ids = 1 for these</td>
+                </tr>
+                <tr>
+                    <td><code>padding</code></td>
+                    <td>False</td>
+                    <td>Set True to pad all sequences to the longest</td>
+                </tr>
+            </table>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SECTION 9: WHAT'S NEXT -->
+        <div class="section">
+            <div class="section-title">
+                <span class="num">09</span>
+                <h2>What comes next?</h2>
+            </div>
+            <div class="card">
+                <p>The <code>PreTrainedTokenizer</code> class is the <strong>bridge between raw text and your
+                        model</strong>. In the next experiments, you'll pass this directly into a training loop — the
+                    tokenizer file (<code>hopper.json</code>) gets loaded once, and from then on,
+                    <code>pt_tokenizer(batch)</code> gives you everything the model expects in one shot.</p>
+            </div>
+
+            <div class="prof-quote">
+                <strong>Prof. said</strong>
+                "All you have to do is just pass it the pre-trained tokenizer file that you had. We'll see it in our
+                experiments when we start training the model."
+            </div>
+
+            <div class="chip-row">
+                <span class="chip green">✓ Tokenizer trained</span>
+                <span class="chip green">✓ Saved as .json</span>
+                <span class="chip green">✓ Wrapped in PreTrainedTokenizerFast</span>
+                <span class="chip blue">→ Feed to model training loop</span>
+                <span class="chip purple">→ Next: Train GPT/BERT model</span>
+            </div>
+        </div>
+
+        <!-- PRACTICE SECTION -->
+        <hr class="divider">
+        <div class="section">
+            <div class="section-title">
+                <span class="num">10</span>
+                <h2>Practice checklist</h2>
+            </div>
+            <div class="card">
+                <ul class="explain-list">
+                    <li><span class="icon">□</span>
+                        <div>Train a tokenizer and save it as <code>my_tokenizer.json</code></div>
+                    </li>
+                    <li><span class="icon">□</span>
+                        <div>Load it using <code>PreTrainedTokenizerFast</code> with <code>unk_token</code> and
+                            <code>pad_token</code></div>
+                    </li>
+                    <li><span class="icon">□</span>
+                        <div>Call it on a single sentence — inspect all 3 output fields</div>
+                    </li>
+                    <li><span class="icon">□</span>
+                        <div>Call it on a sentence pair — verify <code>token_type_ids</code> switches to 1</div>
+                    </li>
+                    <li><span class="icon">□</span>
+                        <div>Call it on a batch of 3 sentences without padding — note unequal lengths</div>
+                    </li>
+                    <li><span class="icon">□</span>
+                        <div>Repeat with <code>padding=True</code> — verify <code>attention_mask=0</code> at pad
+                            positions</div>
+                    </li>
+                    <li><span class="icon">□</span>
+                        <div>Try using the official <code>bert-base-uncased</code> tokenizer — observe
+                            <code>[CLS]</code> and <code>[SEP]</code> appearing</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        IIT Madras B.S. Degree Programme · NLP Course · L8 Notes
+    </footer>
+
+</body>
+
+</html>

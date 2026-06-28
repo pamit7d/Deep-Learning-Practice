@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentencePiece Tokenizer — Complete Notes</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #232640;
+      --border: #2e3155;
+      --accent: #7c6af7;
+      --accent2: #4fc3f7;
+      --accent3: #f06292;
+      --green: #66bb6a;
+      --orange: #ffa726;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 32px 16px 64px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 48px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* Part badges */
+    .part-label {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(124, 106, 247, 0.12);
+      border: 1px solid rgba(124, 106, 247, 0.3);
+      border-radius: 4px;
+      padding: 2px 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 56px;
+    }
+
+    .section h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .section h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin: 20px 0 8px;
+    }
+
+    .section p {
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+
+    /* Code block */
+    .code {
+      background: #0b0d14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--accent2);
+      margin: 12px 0;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.8;
+    }
+
+    /* Highlight spans in code */
+    .h-purple {
+      color: var(--accent);
+    }
+
+    .h-green {
+      color: var(--green);
+    }
+
+    .h-orange {
+      color: var(--orange);
+    }
+
+    .h-pink {
+      color: var(--accent3);
+    }
+
+    .h-white {
+      color: #fff;
+    }
+
+    .h-muted {
+      color: var(--muted);
+    }
+
+    /* Callout */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: rgba(124, 106, 247, 0.07);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 0.92rem;
+    }
+
+    .callout.green {
+      border-color: var(--green);
+      background: rgba(102, 187, 106, 0.07);
+    }
+
+    .callout.orange {
+      border-color: var(--orange);
+      background: rgba(255, 167, 38, 0.07);
+    }
+
+    .callout.pink {
+      border-color: var(--accent3);
+      background: rgba(240, 98, 146, 0.07);
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 16px 0;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--accent2);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--surface);
+    }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin: 20px auto;
+      max-width: 340px;
+    }
+
+    .flow-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 24px;
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 500;
+      width: 100%;
+    }
+
+    .flow-box.accent {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .flow-box.green {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .flow-box.orange {
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    .flow-box.pink {
+      border-color: var(--accent3);
+      color: var(--accent3);
+    }
+
+    .flow-arrow {
+      color: var(--muted);
+      font-size: 1.2rem;
+      line-height: 1.2;
+      padding: 2px 0;
+    }
+
+    /* Comparison grid */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 20px 0;
+    }
+
+    .compare-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .compare-card h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .compare-card.bpe h4 {
+      color: var(--orange);
+    }
+
+    .compare-card.wp h4 {
+      color: var(--accent2);
+    }
+
+    .compare-card.sp h4 {
+      color: var(--accent);
+    }
+
+    .compare-card .step {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compare-card .step:last-child {
+      border-bottom: none;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot.orange {
+      background: var(--orange);
+    }
+
+    .dot.blue {
+      background: var(--accent2);
+    }
+
+    .dot.purple {
+      background: var(--accent);
+    }
+
+    /* Tag pill */
+    .pill {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin: 2px;
+    }
+
+    .pill.purple {
+      background: rgba(124, 106, 247, 0.15);
+      color: var(--accent);
+    }
+
+    .pill.blue {
+      background: rgba(79, 195, 247, 0.15);
+      color: var(--accent2);
+    }
+
+    .pill.green {
+      background: rgba(102, 187, 106, 0.15);
+      color: var(--green);
+    }
+
+    .pill.orange {
+      background: rgba(255, 167, 38, 0.15);
+      color: var(--orange);
+    }
+
+    /* Two-col layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    /* Segmentation example */
+    .seg-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0;
+      font-family: var(--mono);
+      font-size: 0.83rem;
+    }
+
+    .seg-token {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 10px;
+      color: var(--accent2);
+    }
+
+    .seg-score {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .seg-score.best {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    .seg-score.bad {
+      color: var(--accent3);
+      text-decoration: line-through;
+    }
+
+    /* Viterbi table */
+    .viterbi-table td:first-child {
+      font-family: var(--mono);
+      color: var(--accent2);
+    }
+
+    .viterbi-table td:nth-child(2) {
+      font-family: var(--mono);
+      color: var(--green);
+    }
+
+    .viterbi-table td:nth-child(3) {
+      font-family: var(--mono);
+      color: var(--orange);
+    }
+
+    /* Divider */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* Memory trick */
+    .memory-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .memory-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .memory-item .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .memory-item .value {
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .compare-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .memory-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>SentencePiece Tokenizer</h1>
+      <p>Complete notes — Parts 1 through 5 · Crisp · Visual · Easy to understand</p>
+    </div>
+
+    <!-- PART 1 -->
+    <div class="section">
+      <div class="part-label">Part 1</div>
+      <h2>Why SentencePiece? The Problem with BPE</h2>
+
+      <p>BPE is <strong>greedy</strong> — once a merge is made, it's permanent. This means the final tokenization
+        depends on <em>merge order</em>, not on what's actually best for the word.</p>
+
+      <div class="callout orange">
+        <strong>What does "greedy" mean?</strong> At every step, BPE picks whatever looks best <em>right now</em> — like
+        climbing a hill by always stepping on the nearest higher rock. You might reach a small hill instead of the
+        mountain peak, because you never looked ahead.
+      </div>
+
+      <div class="card">
+        <h3>Same vocabulary, different merge order → different result</h3>
+        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:8px;">Vocab: h, e, l, o, he, lo, ll, hello — all
+          valid tokens</p>
+        <div class="code"><span class="h-muted">Merge order 1 → he merged first, then lo:</span>
+          hello → <span class="h-green">he</span> + llo → <span class="h-green">he + l + lo</span>
+
+          <span class="h-muted">Merge order 2 → ll merged first, then he:</span>
+          hello → h + e + <span class="h-orange">ll</span> + o → <span class="h-orange">he + ll + o</span>
+        </div>
+        <p style="font-size:0.84rem; color:var(--muted); margin-top:8px;">⚠️ Same word, same vocabulary — only the merge
+          order changed, yet the tokenization is different.</p>
+      </div>
+
+      <div class="card">
+        <h3>All valid segmentations of "hello"</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">Every one of these is valid because all
+          tokens exist in the vocab. BPE can only pick one depending on merge history. SentencePiece evaluates all and
+          picks the best.</p>
+        <div class="seg-row"><span class="seg-token">hello</span><span
+            style="color:var(--muted); font-size:0.8rem; margin-left:8px;">whole word token</span></div>
+        <div class="seg-row"><span class="seg-token">he</span><span style="color:var(--muted)">+</span><span
+            class="seg-token">ll</span><span style="color:var(--muted)">+</span><span class="seg-token">o</span></div>
+        <div class="seg-row"><span class="seg-token">he</span><span style="color:var(--muted)">+</span><span
+            class="seg-token">l</span><span style="color:var(--muted)">+</span><span class="seg-token">lo</span></div>
+        <div class="seg-row"><span class="seg-token">h</span><span style="color:var(--muted)">+</span><span
+            class="seg-token">e</span><span style="color:var(--muted)">+</span><span class="seg-token">ll</span><span
+            style="color:var(--muted)">+</span><span class="seg-token">o</span></div>
+        <div class="seg-row"><span class="seg-token">h</span><span style="color:var(--muted)">+</span><span
+            class="seg-token">e</span><span style="color:var(--muted)">+</span><span class="seg-token">l</span><span
+            style="color:var(--muted)">+</span><span class="seg-token">l</span><span
+            style="color:var(--muted)">+</span><span class="seg-token">o</span></div>
+      </div>
+
+      <div class="callout">
+        <strong>BPE asks:</strong> "Which pair should I merge next?"<br>
+        <strong>SentencePiece asks:</strong> "Among ALL possible splits, which is the most probable?"
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>BPE — One path</h3>
+          <div class="flow">
+            <div class="flow-box">Characters</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box orange">Merge</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box orange">Merge</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box">Final (greedy)</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>SentencePiece — All paths</h3>
+          <div class="flow">
+            <div class="flow-box">Characters</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box accent">Seg 1 · Seg 2 · Seg 3</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box green">Pick highest probability</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- PART 2 -->
+    <div class="section">
+      <div class="part-label">Part 2</div>
+      <h2>Probability Model — How to Score a Segmentation</h2>
+
+      <p>SentencePiece uses a <strong>Unigram Language Model</strong>: every token is treated as independent, so the
+        probability of a segmentation is just the <em>product</em> of token probabilities.</p>
+
+      <div class="callout orange">
+        <strong>What is "Unigram"?</strong> "Uni" = one. We look at each token <em>alone</em>, not in context of its
+        neighbours. It assumes <code>he</code> appearing has nothing to do with whether <code>ll</code> appears next.
+        This simplification makes the math clean and fast.
+      </div>
+
+      <div class="card">
+        <h3>Why multiply probabilities?</h3>
+        <p style="font-size:0.88rem;">Think of it like flipping coins. If P(Heads) = 0.5, then P(Heads AND Heads) = 0.5
+          × 0.5 = 0.25. Each event is independent, so we multiply. Same logic applies to tokens — we multiply because we
+          assume each token is independently chosen.</p>
+        <div class="code"><span class="h-muted">Segmentation:</span> <span class="h-green">he</span> + <span
+            class="h-green">ll</span> + <span class="h-green">o</span>
+
+          <span class="h-muted">Question:</span> What's the chance we see all three in sequence?
+          <span class="h-muted">Answer:</span> P(he) × P(ll) × P(o) <span class="h-muted">← because they're
+            independent</span>
+          = 0.40 × 0.20 × 0.50
+          = <span class="h-orange">0.040</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Vocabulary probabilities (example)</h3>
+        <table>
+          <tr>
+            <th>Token</th>
+            <th>Probability</th>
+            <th>Log Probability</th>
+          </tr>
+          <tr>
+            <td><code>he</code></td>
+            <td>0.40</td>
+            <td>−0.92</td>
+          </tr>
+          <tr>
+            <td><code>ll</code></td>
+            <td>0.20</td>
+            <td>−1.61</td>
+          </tr>
+          <tr>
+            <td><code>o</code></td>
+            <td>0.50</td>
+            <td>−0.69</td>
+          </tr>
+          <tr>
+            <td><code>h</code></td>
+            <td>0.10</td>
+            <td>−2.30</td>
+          </tr>
+          <tr>
+            <td><code>e</code></td>
+            <td>0.15</td>
+            <td>−1.90</td>
+          </tr>
+          <tr>
+            <td><code>lo</code></td>
+            <td>0.30</td>
+            <td>−1.20</td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>Comparing segmentations of "hello"</h3>
+
+      <div class="seg-row">
+        <span class="seg-token">he</span><span style="color:var(--muted)">+</span>
+        <span class="seg-token">ll</span><span style="color:var(--muted)">+</span>
+        <span class="seg-token">o</span>
+        <span class="seg-score best">0.40 × 0.20 × 0.50 = 0.040 ✓ Winner</span>
+      </div>
+      <div class="seg-row">
+        <span class="seg-token">h</span><span style="color:var(--muted)">+</span>
+        <span class="seg-token">e</span><span style="color:var(--muted)">+</span>
+        <span class="seg-token">ll</span><span style="color:var(--muted)">+</span>
+        <span class="seg-token">o</span>
+        <span class="seg-score bad">0.10 × 0.15 × 0.20 × 0.50 = 0.0015</span>
+      </div>
+
+      <div class="callout green">
+        <strong>Why log probabilities?</strong> Multiplying many small decimals causes underflow.<br>
+        <code>log(a × b) = log(a) + log(b)</code> — multiplication becomes addition, which is faster and stable.
+      </div>
+
+      <div class="card">
+        <h3>Formula</h3>
+        <div class="code"><span class="h-muted">Direct: </span> P(X) = P(x₁) × P(x₂) × ... × P(xₙ)
+
+          <span class="h-muted">Log form:</span> log P(X) = log P(x₁) + log P(x₂) + ... + log P(xₙ)
+
+          <span class="h-muted">Goal: </span> X* = argmax P(X) <span class="h-muted">← find segmentation with max
+            probability</span>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- PART 3 -->
+    <div class="section">
+      <div class="part-label">Part 3</div>
+      <h2>Training with the EM Algorithm</h2>
+
+      <p>SentencePiece <strong>starts with a huge vocabulary</strong> and gradually prunes it — the opposite of BPE.</p>
+
+      <div class="callout orange">
+        <strong>Latent Variable:</strong> The text corpus is observed, but the correct segmentation of each word is
+        <em>hidden</em>. EM discovers it iteratively.<br><br>
+        <strong>Why start large?</strong> Instead of guessing which 30K tokens are useful upfront, we collect everything
+        (250K+) and let the algorithm <em>delete the bad ones</em>. It's easier to remove than to add — like writing
+        every possible answer on a test and erasing the wrong ones.
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>E-Step — Estimate Probabilities</h3>
+          <p style="font-size:0.88rem;">Look at the current best segmentation of every word. Count how often each token
+            appears across the whole corpus. Then:</p>
+          <div class="code">P(token) = freq(token)
+            ─────────────
+            total freq
+
+            <span class="h-muted">Example:</span>
+            Token "ing" appears 300 times
+            Total all tokens = 920
+
+            P(ing) = 300/920 = 0.326
+          </div>
+        </div>
+        <div class="card">
+          <h3>M-Step — Find Best Segmentation</h3>
+          <p style="font-size:0.88rem;">Using the updated probabilities, re-tokenize every word by finding its
+            highest-probability segmentation (via Viterbi). This may change which tokens get used.</p>
+          <div class="code"><span class="h-muted">Before M-step:</span>
+            "learning" → learn + ing
+
+            <span class="h-muted">After M-step (probs changed):</span>
+            "learning" → lea + rning
+
+            <span class="h-muted">Effect:</span>
+            freq(learn) ↓ freq(lea) ↑
+            freq(ing) ↓ freq(rning) ↑
+          </div>
+        </div>
+      </div>
+
+      <h3>Full Training Loop</h3>
+      <div class="flow">
+        <div class="flow-box accent">Start: Large Vocab (e.g. 250K tokens)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box">E-Step: Estimate token probabilities</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box">M-Step: Best segmentation per word (Viterbi)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box">Update token frequencies & probabilities</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box pink">Remove bottom 20% lowest-prob tokens</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-box green">Repeat until target size reached (e.g. 30K)</div>
+      </div>
+
+      <div class="callout">
+        Useless tokens like <code>xyz</code>, <code>abcq</code> are almost never selected in best segmentations → their
+        probability approaches 0 → automatically removed.
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- PART 4 -->
+    <div class="section">
+      <div class="part-label">Part 4</div>
+      <h2>Viterbi Algorithm — Finding the Best Segmentation Efficiently</h2>
+
+      <p>Brute-force search over all segmentations is exponential. Viterbi uses <strong>dynamic programming +
+          pruning</strong> to find the optimal path in linear time.</p>
+
+      <div class="callout pink">
+        <strong>Key insight:</strong> If path A beats path B at position i, then any extension of B can <em>never</em>
+        beat the same extension of A. → Discard B immediately.
+      </div>
+
+      <div class="card">
+        <h3>What is Dynamic Programming here?</h3>
+        <p style="font-size:0.88rem;">Instead of recomputing from scratch for each segmentation, we store the <em>best
+            score up to each character position</em>. When we move to the next character, we just look up the stored
+          best — no recomputation needed.</p>
+        <div class="code"><span class="h-muted">Position 1:</span> best[1] = best way to tokenize first 1 char
+          <span class="h-muted">Position 2:</span> best[2] = best way to tokenize first 2 chars
+          <span class="h-muted">Position N:</span> best[N] = <span class="h-green">answer!</span>
+
+          <span class="h-muted">Each position only looks at:</span>
+          "What's the best split ending exactly here?"
+          → Compare all tokens that END at this position
+          → Keep only the winner, discard the rest
+        </div>
+      </div>
+
+      <h3>Example: tokenizing "WHERE" step by step</h3>
+      <p style="font-size:0.88rem; color:var(--muted); margin-bottom:12px;">Vocab with log probs: W (−4.29), H (−3.34),
+        WH (−5.99), E (−2.11), ER (−4.01), ERE (−4.50), WHERE (not in vocab). Higher = better (less negative).</p>
+
+      <table class="viterbi-table">
+        <tr>
+          <th>Position</th>
+          <th>Best Segmentation</th>
+          <th>Log Score</th>
+          <th>Candidates compared</th>
+          <th>Pruned</th>
+        </tr>
+        <tr>
+          <td>W</td>
+          <td>W</td>
+          <td>−4.29</td>
+          <td>Only "W" possible</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>WH</td>
+          <td>WH</td>
+          <td>−5.99 ✓</td>
+          <td>WH (−5.99) vs W+H (−4.29−3.34=−7.63)</td>
+          <td>W+H = −7.63 ✗</td>
+        </tr>
+        <tr>
+          <td>WHE</td>
+          <td>WH + E</td>
+          <td>−8.10</td>
+          <td>best[WH] + E = −5.99−2.11</td>
+          <td>WHE not in vocab</td>
+        </tr>
+        <tr>
+          <td>WHER</td>
+          <td>WH + ER</td>
+          <td>−10.00 ✓</td>
+          <td>best[WH]+ER (−9.99) vs best[WHE]+R (−8.10−3.56=−11.66)</td>
+          <td>WH+E+R = −11.66 ✗</td>
+        </tr>
+        <tr>
+          <td>WHERE</td>
+          <td>WH + ERE</td>
+          <td>−10.49 ✓</td>
+          <td>best[WH]+ERE (−10.49) vs best[WHER]+E (−10.00−2.11=−12.11)</td>
+          <td>WH+ER+E = −12.11 ✗</td>
+        </tr>
+      </table>
+
+      <div class="card">
+        <h3>Step-by-step reasoning</h3>
+        <p style="font-size:0.85rem;"><strong style="color:var(--accent2)">Position WH:</strong> We can either treat
+          "WH" as a single token (−5.99) or as two separate tokens W+H (−4.29 + −3.34 = −7.63). Since −5.99 &gt; −7.63,
+          <strong>WH wins</strong>. The path W→H is pruned forever.</p>
+        <p style="font-size:0.85rem;"><strong style="color:var(--accent2)">Position WHE:</strong> Only one valid option
+          — extend the best path at WH by adding token E. Score = −5.99 + −2.11 = −8.10. Token "WHE" doesn't exist in
+          vocab so that's ruled out.</p>
+        <p style="font-size:0.85rem;"><strong style="color:var(--accent2)">Position WHER:</strong> Two options — extend
+          from WHE by adding R (−8.10 + −3.56 = −11.66), OR extend from WH by adding ER as one token (−5.99 + −4.01 =
+          −10.00). <strong>WH+ER wins</strong> because −10.00 &gt; −11.66.</p>
+        <p style="font-size:0.85rem;"><strong style="color:var(--accent2)">Position WHERE:</strong> Extend from WHER+E
+          (−10.00 + −2.11 = −12.11) OR from WH+ERE as one token (−5.99 + −4.50 = −10.49). <strong>WH+ERE wins</strong>.
+        </p>
+      </div>
+
+      <h3>Pruning visualised</h3>
+      <div class="code"><span class="h-white">START</span>
+        │
+        ├─ <span class="h-orange">W</span> (−4.29)
+        │ └─ <span class="h-orange">W + H</span> = −7.63 <span class="h-pink">✂ PRUNED (worse than WH)</span>
+        │
+        └─ <span class="h-green">WH</span> (−5.99) ◀ BEST
+        └─ <span class="h-green">WH + E</span> (−8.10)
+        └─ <span class="h-green">WH + ER</span> (−10.00) ◀ BEST
+        └─ <span class="h-green">WH + ERE</span> (−10.49) ◀ FINAL ✓</div>
+
+      <div class="callout green">
+        <strong>Result:</strong> <code>WHERE</code> → <code>WH</code> + <code>ERE</code> with log score −10.49
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- PART 5 -->
+    <div class="section">
+      <div class="part-label">Part 5</div>
+      <h2>Complete Comparison & Summary</h2>
+
+      <div class="compare-grid">
+        <div class="compare-card bpe">
+          <h4>BPE</h4>
+          <div class="step"><span class="dot orange"></span>Start with characters</div>
+          <div class="step"><span class="dot orange"></span>Count pair frequencies</div>
+          <div class="step"><span class="dot orange"></span>Merge most frequent pair</div>
+          <div class="step"><span class="dot orange"></span>Repeat → vocab grows</div>
+        </div>
+        <div class="compare-card wp">
+          <h4>WordPiece</h4>
+          <div class="step"><span class="dot blue"></span>Start with characters</div>
+          <div class="step"><span class="dot blue"></span>Compute score = P(AB)/P(A)P(B)</div>
+          <div class="step"><span class="dot blue"></span>Merge highest score pair</div>
+          <div class="step"><span class="dot blue"></span>Repeat → vocab grows</div>
+        </div>
+        <div class="compare-card sp">
+          <h4>SentencePiece</h4>
+          <div class="step"><span class="dot purple"></span>Start with large vocab</div>
+          <div class="step"><span class="dot purple"></span>EM: estimate probabilities</div>
+          <div class="step"><span class="dot purple"></span>Viterbi: best segmentation</div>
+          <div class="step"><span class="dot purple"></span>Remove weak tokens → shrinks</div>
+        </div>
+      </div>
+
+      <h3>Feature comparison</h3>
+      <table>
+        <tr>
+          <th>Feature</th>
+          <th>BPE</th>
+          <th>WordPiece</th>
+          <th>SentencePiece</th>
+        </tr>
+        <tr>
+          <td>Decision rule</td>
+          <td>Highest frequency</td>
+          <td>Highest score</td>
+          <td>Highest probability</td>
+        </tr>
+        <tr>
+          <td>Vocabulary direction</td>
+          <td>Grows ↑</td>
+          <td>Grows ↑</td>
+          <td>Shrinks ↓</td>
+        </tr>
+        <tr>
+          <td>Search method</td>
+          <td>Greedy</td>
+          <td>Greedy</td>
+          <td>Viterbi + DP</td>
+        </tr>
+        <tr>
+          <td>Probability model</td>
+          <td>None</td>
+          <td>Partial</td>
+          <td>Full (Unigram)</td>
+        </tr>
+        <tr>
+          <td>Used in</td>
+          <td>GPT-2, GPT-3</td>
+          <td>BERT, DistilBERT</td>
+          <td>T5, ALBERT, XLNet, mT5</td>
+        </tr>
+      </table>
+
+      <h3>One-line memory tricks</h3>
+      <div class="memory-grid">
+        <div class="memory-item">
+          <span class="label">BPE</span>
+          <span class="value" style="color:var(--orange)">Merge by Frequency</span>
+        </div>
+        <div class="memory-item">
+          <span class="label">WordPiece</span>
+          <span class="value" style="color:var(--accent2)">Merge by Score</span>
+        </div>
+        <div class="memory-item">
+          <span class="label">SentencePiece</span>
+          <span class="value" style="color:var(--accent)">Choose Segmentation by Probability</span>
+        </div>
+        <div class="memory-item">
+          <span class="label">Viterbi</span>
+          <span class="value" style="color:var(--green)">DP: Prune bad paths early</span>
+        </div>
+        <div class="memory-item" style="grid-column: span 2;">
+          <span class="label">EM Algorithm</span>
+          <span class="value" style="color:var(--accent3)">Estimate → Optimize → Remove → Repeat</span>
+        </div>
+      </div>
+
+      <h3>Quick-fire interview answers</h3>
+      <div class="card">
+        <p><strong style="color:var(--accent2)">Q: Why is BPE greedy?</strong><br>
+          It always picks the most frequent pair right now, without checking future merges. Like always stepping on the
+          nearest higher rock — you might end up on a small hill, not the mountain peak.</p>
+      </div>
+      <div class="card">
+        <p><strong style="color:var(--accent2)">Q: Why use log probabilities?</strong><br>
+          Multiplying many small values (e.g. 0.4 × 0.2 × 0.1 × 0.05 × ...) quickly becomes 0.000000001 — computers lose
+          precision. Log turns <code>×</code> into <code>+</code>, so we add clean negative numbers instead.</p>
+      </div>
+      <div class="card">
+        <p><strong style="color:var(--accent2)">Q: What does Viterbi do?</strong><br>
+          Finds the highest-probability segmentation efficiently. At each character position, it stores only the best
+          path reaching that point and discards all worse paths. This avoids checking every possible split combination.
+        </p>
+      </div>
+      <div class="card">
+        <p><strong style="color:var(--accent2)">Q: What is the EM algorithm's role?</strong><br>
+          <strong>E-step:</strong> Given the current segmentations, estimate how likely each token is (its probability).
+          <strong>M-step:</strong> Given those probabilities, re-find the best segmentation for every word. The two
+          steps feed each other — better probabilities → better segmentation → better probabilities — until convergence.
+        </p>
+      </div>
+      <div class="card">
+        <p><strong style="color:var(--accent2)">Q: Why does SentencePiece start with a large vocabulary?</strong><br>
+          Because it's hard to know upfront which 30K subwords will be useful. Starting with 250K and pruning weak ones
+          is safer — tokens with near-zero probability are removed automatically since they never appear in optimal
+          segmentations.</p>
+      </div>
+    </div>
+
+  </div>
+</body>
+
+</html>

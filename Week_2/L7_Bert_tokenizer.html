@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BERT Tokenizer — L9 Interactive Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ── Dark mode (default) ── */
+        :root {
+            --bg: #0d0f14;
+            --surface: #161b24;
+            --surface2: #1e2533;
+            --surface3: #252e3f;
+            --border: #2a3347;
+            --border2: #374159;
+            --text: #e2e8f4;
+            --muted: #7f8ea8;
+            --faint: #4a5568;
+
+            --accent: #60a5fa;
+            --accent-dim: #1e3a5f;
+            --accent-border: #2563eb;
+
+            --green: #34d399;
+            --green-dim: #0d3326;
+            --green-border: #065f46;
+
+            --orange: #fbbf24;
+            --orange-dim: #3b2800;
+            --orange-border: #92400e;
+
+            --red: #f87171;
+            --red-dim: #3b0f0f;
+            --red-border: #7f1d1d;
+
+            --purple: #a78bfa;
+            --purple-dim: #2d1b69;
+            --purple-border: #5b21b6;
+
+            --code-bg: #0a0e17;
+            --mono: 'JetBrains Mono', 'Courier New', monospace;
+            --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        /* ── Light mode ── */
+        :root.light {
+            --bg: #f8f8f6;
+            --surface: #ffffff;
+            --surface2: #f1f0ec;
+            --surface3: #e8e6e0;
+            --border: #e0ddd6;
+            --border2: #c8c4bc;
+            --text: #1a1a18;
+            --muted: #6b6a64;
+            --faint: #a0a09a;
+
+            --accent: #1a56db;
+            --accent-dim: #eff4ff;
+            --accent-border: #93c5fd;
+
+            --green: #057a55;
+            --green-dim: #f0fdf4;
+            --green-border: #a7f3d0;
+
+            --orange: #b45309;
+            --orange-dim: #fffbeb;
+            --orange-border: #fcd34d;
+
+            --red: #dc2626;
+            --red-dim: #fef2f2;
+            --red-border: #fca5a5;
+
+            --purple: #7c3aed;
+            --purple-dim: #faf5ff;
+            --purple-border: #c4b5fd;
+
+            --code-bg: #1e1e1e;
+        }
+
+        /* ── Light mode adjustments ── */
+        :root.light .header h1 {
+            background: linear-gradient(135deg, #1a1a18 0%, #1a56db 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        :root.light pre::before {
+            background: linear-gradient(90deg, #93c5fd, #c4b5fd, transparent);
+        }
+
+        :root.light .step-num {
+            background: linear-gradient(135deg, #1a56db, #7c3aed);
+            box-shadow: 0 0 8px rgba(26, 86, 219, 0.3);
+        }
+
+        :root.light h3 {
+            color: #1a56db;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: var(--sans);
+            font-size: 15px;
+            color: var(--text);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 3px;
+        }
+
+        .container {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 2.5rem 1.75rem;
+        }
+
+        /* ── Header ── */
+        .header {
+            margin-bottom: 2.2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -.3px;
+            background: linear-gradient(135deg, #e2e8f4 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: background .3s;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 5px;
+            letter-spacing: .01em;
+        }
+
+        /* ── Nav tabs ── */
+        .nav {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .nav button {
+            font-size: 13px;
+            font-family: var(--sans);
+            padding: 6px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all .18s;
+            font-weight: 500;
+            letter-spacing: .01em;
+        }
+
+        .nav button:hover {
+            border-color: var(--accent-border);
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .nav button.active {
+            background: var(--accent-dim);
+            border-color: var(--accent-border);
+            color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent-border);
+        }
+
+        /* ── Sections ── */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: .7rem;
+            color: var(--text);
+            letter-spacing: -.2px;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 1.8rem 0 .5rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h3::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        h4 {
+            font-size: 12px;
+            font-weight: 600;
+            margin: 1.2rem 0 .4rem;
+            color: var(--faint);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+        }
+
+        p {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: .7rem;
+        }
+
+        /* ── Callouts ── */
+        .callout {
+            border-left: 3px solid var(--accent-border);
+            background: var(--accent-dim);
+            padding: 13px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            margin: 1rem 0;
+            color: var(--text);
+            line-height: 1.7;
+            box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.08);
+        }
+
+        .callout.green {
+            border-color: var(--green-border);
+            background: var(--green-dim);
+            box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.08);
+        }
+
+        .callout.orange {
+            border-color: var(--orange-border);
+            background: var(--orange-dim);
+            box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.08);
+        }
+
+        .callout.red {
+            border-color: var(--red-border);
+            background: var(--red-dim);
+            box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.08);
+        }
+
+        .callout.purple {
+            border-color: var(--purple-border);
+            background: var(--purple-dim);
+            box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.08);
+        }
+
+        .callout b {
+            color: var(--text);
+        }
+
+        /* ── Context block ── */
+        .context-block {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin: .9rem 0;
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.8;
+        }
+
+        .context-block .label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--faint);
+            margin-bottom: 8px;
+        }
+
+        /* ── Token tags ── */
+        .tag {
+            display: inline-block;
+            font-size: 11.5px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 5px;
+            margin: 2px;
+            font-family: var(--mono);
+            letter-spacing: .02em;
+        }
+
+        .tag.cls {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid var(--accent-border);
+        }
+
+        .tag.sep {
+            background: var(--orange-dim);
+            color: var(--orange);
+            border: 1px solid var(--orange-border);
+        }
+
+        .tag.pad {
+            background: var(--surface3);
+            color: var(--muted);
+            border: 1px solid var(--border2);
+        }
+
+        .tag.mask {
+            background: var(--red-dim);
+            color: var(--red);
+            border: 1px solid var(--red-border);
+        }
+
+        .tag.unk {
+            background: var(--purple-dim);
+            color: var(--purple);
+            border: 1px solid var(--purple-border);
+        }
+
+        .tag.tok {
+            background: var(--surface3);
+            color: var(--text);
+            border: 1px solid var(--border2);
+        }
+
+        .tag.sub {
+            background: var(--green-dim);
+            color: var(--green);
+            border: 1px solid var(--green-border);
+        }
+
+        /* ── Token sequence display ── */
+        .seq {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: .6rem 0;
+            padding: 14px 16px;
+            background: var(--surface2);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .seq-label {
+            font-size: 10px;
+            color: var(--faint);
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        /* ── Code blocks ── */
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 18px;
+            font-size: 13px;
+            font-family: var(--mono);
+            overflow-x: auto;
+            margin: .6rem 0 1.2rem;
+            line-height: 1.8;
+            color: #abb2bf;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
+            position: relative;
+        }
+
+        pre::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-border), var(--purple-border), transparent);
+            border-radius: 10px 10px 0 0;
+        }
+
+        .kw {
+            color: #c678dd;
+        }
+
+        .st {
+            color: #98c379;
+        }
+
+        .cm {
+            color: #5c6370;
+            font-style: italic;
+        }
+
+        .num {
+            color: #d19a66;
+        }
+
+        .bi {
+            color: #56b6c2;
+        }
+
+        /* ── Grid & Cards ── */
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: .9rem 0;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px 16px;
+            transition: border-color .2s;
+        }
+
+        .card:hover {
+            border-color: var(--border2);
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 7px;
+            color: var(--text);
+        }
+
+        .card-body {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        /* ── Pipeline flow ── */
+        .flow {
+            display: flex;
+            align-items: stretch;
+            flex-wrap: wrap;
+            gap: 0;
+            margin: .9rem 0;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .flow-box {
+            flex: 1;
+            min-width: 90px;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            border-right: 1px solid var(--border);
+            color: var(--accent);
+            position: relative;
+        }
+
+        .flow-box:last-child {
+            border-right: none;
+        }
+
+        .flow-box::after {
+            content: '→';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: var(--faint);
+            z-index: 1;
+        }
+
+        .flow-box:last-child::after {
+            display: none;
+        }
+
+        .flow-box span {
+            display: block;
+            font-size: 10.5px;
+            color: var(--muted);
+            font-weight: 400;
+            margin-top: 3px;
+        }
+
+        /* ── Step rows ── */
+        .step-row {
+            display: flex;
+            gap: 14px;
+            margin: 1.2rem 0 .3rem;
+        }
+
+        .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-border), var(--purple-border));
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+            box-shadow: 0 0 12px rgba(96, 165, 250, 0.25);
+        }
+
+        .step-body {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text);
+        }
+
+        .step-body b {
+            color: var(--text);
+        }
+
+        .step-body code {
+            background: var(--surface3);
+            padding: 1px 7px;
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 12px;
+            border: 1px solid var(--border2);
+            color: var(--accent);
+        }
+
+        /* ── Decode output rows ── */
+        .decode-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+
+        .decode-label {
+            font-size: 12px;
+            color: var(--muted);
+            min-width: 115px;
+            padding-top: 8px;
+            font-weight: 600;
+        }
+
+        .output {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            padding: 8px 13px;
+            border-radius: 7px;
+            border: 1px solid var(--border2);
+            background: var(--surface2);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .output.bad {
+            border-color: var(--red-border);
+            background: var(--red-dim);
+            color: var(--red);
+        }
+
+        .output.good {
+            border-color: var(--green-border);
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        /* ── Divider ── */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1.8rem 0;
+        }
+
+        /* ── Inline code ── */
+        .inline-code {
+            background: var(--surface3);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 12px;
+            border: 1px solid var(--border2);
+            color: var(--accent);
+        }
+
+        /* ── Why box ── */
+        .why-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--purple-border);
+            border-radius: 0 8px 8px 0;
+            padding: 13px 16px;
+            margin: .8rem 0;
+            font-size: 14px;
+        }
+
+        .why-box .q {
+            font-weight: 600;
+            color: var(--purple);
+            margin-bottom: 6px;
+        }
+
+        .why-box .a {
+            color: var(--muted);
+            line-height: 1.75;
+        }
+
+        @media (max-width: 600px) {
+            .grid2 {
+                grid-template-columns: 1fr;
+            }
+
+            .flow-box {
+                min-width: 70px;
+                font-size: 11px;
+            }
+
+            .container {
+                padding: 1.5rem 1rem;
+            }
+        }
+
+        /* ── Theme toggle button ── */
+        .theme-toggle {
+            position: fixed;
+            top: 16px;
+            right: 20px;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 30px;
+            padding: 6px 14px 6px 10px;
+            cursor: pointer;
+            font-family: var(--sans);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--muted);
+            transition: all .2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+            user-select: none;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .toggle-track {
+            width: 34px;
+            height: 18px;
+            border-radius: 9px;
+            background: var(--border2);
+            position: relative;
+            transition: background .25s;
+            flex-shrink: 0;
+        }
+
+        .toggle-track.on {
+            background: var(--accent-border);
+        }
+
+        .toggle-thumb {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform .25s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+        }
+
+        .toggle-track.on .toggle-thumb {
+            transform: translateX(16px);
+        }
+
+        .toggle-icon {
+            font-size: 15px;
+        }
+
+        /* ── Global transitions for smooth switch ── */
+        body,
+        .card,
+        .callout,
+        .context-block,
+        .why-box,
+        .seq,
+        .flow,
+        .flow-box,
+        .nav button,
+        pre,
+        .output,
+        .tag,
+        .inline-code,
+        .header,
+        .step-num,
+        h3 {
+            transition: background-color .25s, border-color .25s, color .25s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle light/dark mode">
+            <span class="toggle-track on" id="track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-icon" id="toggleIcon">🌙</span>
+            <span id="toggleLabel">Dark</span>
+        </button>
+        <div class="header">
+            <h1>L7 — BERT Tokenizer &amp; Decoding</h1>
+            <p>IIT Madras · Foundations of LLMs · Interactive Study Notes</p>
+        </div>
+        <div class="nav" id="nav">
+            <button class="active" onclick="show('overview',this)">Overview</button>
+            <button onclick="show('special',this)">Special Tokens</button>
+            <button onclick="show('build',this)">Build Tokenizer</button>
+            <button onclick="show('postproc',this)">Post-processing</button>
+            <button onclick="show('decode',this)">Decoding</button>
+            <button onclick="show('allcodes',this)">All Codes</button>
+        </div>
+
+        <!-- ═══════════════ OVERVIEW ═══════════════ -->
+        <div class="section active" id="overview">
+            <h2>What is a BERT Tokenizer?</h2>
+            <p>BERT (Bidirectional Encoder Representations from Transformers) is a model you learned in the Foundations
+                of LLMs course. Unlike GPT-style models that just receive raw tokens, BERT requires its input to be
+                formatted in a very specific way — with special structural tokens inserted at exact positions. The
+                tokenizer is responsible for doing all of this automatically.</p>
+
+            <div class="callout">
+                <b>Core idea:</b> BERT uses a <b>WordPiece / BPE</b> algorithm to split words into subword units, but on
+                top of that, it wraps the output with special tokens like <span class="tag cls">[CLS]</span> and <span
+                    class="tag sep">[SEP]</span> that tell the model where a sentence starts, ends, and where two
+                sentences meet.
+            </div>
+
+            <h3>Why does BERT need a specific input format?</h3>
+            <div class="context-block">
+                <div class="label">Context</div>
+                BERT was designed for two pre-training tasks:<br>
+                <b>1. Masked Language Modelling (MLM)</b> — predict randomly hidden words in a sentence.<br>
+                <b>2. Next Sentence Prediction (NSP)</b> — given two sentences, predict whether B follows A.<br><br>
+                For NSP, the model needs to receive <em>two sentences at once</em> and know exactly where one ends and
+                the other begins. That's why the <span class="tag sep">[SEP]</span> separator and the <span
+                    class="tag cls">[CLS]</span> classification token exist — they're baked into the input format.
+            </div>
+
+            <h3>Input Template (the BERT contract)</h3>
+            <div class="seq">
+                <div class="seq-label">Single sentence</div>
+                <span class="tag cls">[CLS]</span><span class="tag tok">token-A_1</span><span
+                    class="tag tok">···</span><span class="tag tok">token-A_n</span><span class="tag sep">[SEP]</span>
+            </div>
+            <div class="seq">
+                <div class="seq-label">Sentence pair (A + B)</div>
+                <span class="tag cls">[CLS]</span><span class="tag tok">token-A_1</span><span
+                    class="tag tok">···</span><span class="tag tok">token-A_n</span><span
+                    class="tag sep">[SEP]</span><span class="tag tok">token-B_1</span><span
+                    class="tag tok">···</span><span class="tag tok">token-B_m</span>
+            </div>
+            <p style="font-size:13px;margin-top:4px">Here A denotes sentence A with n tokens, B denotes sentence B with
+                m tokens — as explained in the lecture.</p>
+
+            <h3>Full Pipeline at a Glance</h3>
+            <div class="flow">
+                <div class="flow-box">Raw text<span>input string</span></div>
+                <div class="flow-box">Normalizer<span>lowercase</span></div>
+                <div class="flow-box">Pre-tokenizer<span>whitespace split</span></div>
+                <div class="flow-box">BPE Model<span>vocab=32k, ## prefix</span></div>
+                <div class="flow-box">Post-processor<span>[CLS]/[SEP] insert</span></div>
+                <div class="flow-box">Decoder<span>## subword merger</span></div>
+            </div>
+
+            <h3>Key concepts to keep in mind</h3>
+            <div class="grid2" style="margin-top:.5rem">
+                <div class="card">
+                    <div class="card-title">WordPiece / BPE</div>
+                    <div class="card-body">Rare words get split into known subpieces. "hugging" → ['hug','##ging']. This
+                        keeps the vocabulary small while handling unseen words.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">## (double hash)</div>
+                    <div class="card-body">BERT's signal that a subword is a continuation — it should be joined with the
+                        token before it. GPT-2 uses Ġ instead. Different models, different conventions.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Encoder vs Decoder</div>
+                    <div class="card-body">Here "encoder" = turning text into token IDs. "Decoder" = turning token IDs
+                        back into text. This is tokenizer encoding/decoding, NOT the transformer encoder/decoder
+                        architecture.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Post-processor</div>
+                    <div class="card-body">A configurable step that wraps tokens after BPE. It's separate from the BPE
+                        model so different models (BERT, RoBERTa, etc.) can share the same tokenizer code with different
+                        templates.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ SPECIAL TOKENS ═══════════════ -->
+        <div class="section" id="special">
+            <h2>Special Tokens in BERT</h2>
+            <p>These are reserved tokens added to the vocabulary before training begins. Their IDs are fixed — they're
+                always the lowest-numbered entries because they're listed first in the trainer config.</p>
+
+            <div class="callout orange">
+                <b>ID assignment rule:</b> The order you list tokens in <span
+                    class="inline-code">special_tokens=[...]</span> inside BpeTrainer determines their IDs — first in
+                list = lowest ID.<br>
+                <span class="inline-code">["[PAD]","[UNK]","[CLS]","[SEP]","[MASK]"]</span> → PAD=0, UNK=1, CLS=2,
+                SEP=3, MASK=4
+            </div>
+
+            <div class="grid2" style="margin-top:1rem">
+                <div class="card">
+                    <div class="card-title"><span class="tag cls">[CLS]</span> — Classifier · ID: 2</div>
+                    <div class="card-body">Always the very first token in any BERT input. After the full transformer
+                        forward pass, <em>only the hidden state at position 0 (the [CLS] position)</em> is used as the
+                        "summary" of the whole sequence — fed into a classification head. It has no linguistic meaning;
+                        it's just a learnable slot for the model to accumulate sentence-level meaning.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="tag sep">[SEP]</span> — Separator · ID: 3</div>
+                    <div class="card-body">Marks the end of a sentence or the boundary between two sentences in a pair.
+                        Combined with <b>segment embeddings</b> (type_id 0 for A, type_id 1 for B), it lets BERT know
+                        which tokens belong to which sentence — critical for NSP pre-training.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="tag pad">[PAD]</span> — Padding · ID: 0</div>
+                    <div class="card-body">Training happens in batches. All sequences in a batch must be the same
+                        length. Shorter ones are padded with [PAD] to match the longest. The attention mask is set to 0
+                        for pad positions so the model ignores them — padding is purely a batching convenience, not real
+                        input.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="tag mask">[MASK]</span> — Masked · ID: 4</div>
+                    <div class="card-body">Used exclusively during <b>MLM pre-training</b>. About 15% of tokens are
+                        randomly replaced with [MASK], and the model must predict the original token. This is what makes
+                        BERT "bidirectional" — it sees context from both sides when predicting a masked token. At
+                        inference time, [MASK] is never used.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="tag unk">[UNK]</span> — Unknown · ID: 1</div>
+                    <div class="card-body">A catch-all for any character sequence that cannot be represented even as a
+                        subword in the vocabulary. With a vocab size of 32,000 and aggressive subword splitting, this is
+                        rarely triggered — but it's always there as a safety net.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="tag sub">##</span> — Subword Prefix (not a token)</div>
+                    <div class="card-body">Not a vocabulary token, but a <b>prefix convention</b>. When BPE splits
+                        "huggingface" into ['hug', '##ging', '##face'], the ## tells the decoder: "I am a continuation —
+                        strip my ## and join me to the previous token." This is how full words are reconstructed from
+                        pieces.</div>
+                </div>
+            </div>
+
+            <h3>What a real tokenization looks like</h3>
+            <div class="context-block">
+                <div class="label">From the lecture — encoding this sentence:</div>
+                <span class="inline-code">"All these are so simple to do in HF. Let's do more"</span>
+            </div>
+            <div class="seq">
+                <div class="seq-label">Token output</div>
+                <span class="tag cls">[CLS]</span><span class="tag tok">all</span><span
+                    class="tag tok">these</span><span class="tag tok">are</span><span class="tag tok">so</span><span
+                    class="tag tok">simple</span><span class="tag tok">to</span><span class="tag tok">do</span><span
+                    class="tag tok">in</span><span class="tag tok">h</span><span class="tag sub">##f</span><span
+                    class="tag tok">.</span><span class="tag tok">let</span><span class="tag tok">'</span><span
+                    class="tag tok">s</span><span class="tag tok">do</span><span class="tag tok">more</span><span
+                    class="tag sep">[SEP]</span>
+            </div>
+            <p style="font-size:13px">Notice "HF" → <span class="tag tok">h</span> + <span class="tag sub">##f</span>.
+                After lowercasing, "hf" wasn't a single vocabulary entry, so BPE split it. Everything else was already
+                in the vocabulary, so no further splitting was needed — which is why you <em>don't</em> see a ## on most
+                tokens.</p>
+
+            <hr class="divider">
+            <h3>Sentence pair example (from the lecture)</h3>
+            <div class="seq">
+                <div class="seq-label">Pair: sentence A + sentence B</div>
+                <span class="tag cls">[CLS]</span>
+                <span class="tag tok">all</span><span class="tag tok">these</span><span class="tag tok">···</span><span
+                    class="tag tok">more</span>
+                <span class="tag sep">[SEP]</span>
+                <span class="tag tok">we</span><span class="tag tok">have</span><span class="tag tok">a</span><span
+                    class="tag tok">long</span><span class="tag tok">way</span><span class="tag tok">to</span><span
+                    class="tag tok">go</span><span class="tag tok">!</span>
+            </div>
+            <p style="font-size:13px">The second [SEP] at the very end is optional — some BERT variants add it, some
+                don't. The key boundary is the [SEP] between A and B.</p>
+        </div>
+
+        <!-- ═══════════════ BUILD ═══════════════ -->
+        <div class="section" id="build">
+            <h2>Building the BERT Tokenizer</h2>
+            <p>You are assembling a tokenizer pipeline piece by piece. Think of it like connecting stages on an assembly
+                line — each component does one job, and you can swap any component independently.</p>
+
+            <hr class="divider">
+
+            <div class="step-row">
+                <div class="step-num">1</div>
+                <div class="step-body"><b>Create the base tokenizer with a BPE model</b><br>
+                    The <code>Tokenizer</code> object is the container. You hand it a <code>BPE</code> model which is
+                    the actual subword algorithm. The <code>unk_token</code> tells BPE what to emit when it encounters a
+                    completely unknown character.</div>
+            </div>
+            <pre><span class="kw">from</span> tokenizers <span class="kw">import</span> Tokenizer
+<span class="kw">from</span> tokenizers.models <span class="kw">import</span> BPE
+
+bert_tokenizer = Tokenizer(BPE(unk_token=<span class="st">"[UNK]"</span>))</pre>
+
+            <div class="step-row">
+                <div class="step-num">2</div>
+                <div class="step-body"><b>Attach a Lowercase normalizer</b><br>
+                    Normalization runs before anything else. BERT-base is case-insensitive, so all input is lowercased
+                    first. This means "HuggingFace" and "huggingface" produce the same tokens — the model has half the
+                    vocabulary to learn.</div>
+            </div>
+            <pre><span class="kw">from</span> tokenizers <span class="kw">import</span> normalizers
+
+bert_tokenizer.normalizer = normalizers.Lowercase()</pre>
+
+            <div class="why-box">
+                <div class="q">Why normalise before tokenizing?</div>
+                <div class="a">If you lowercase after BPE, "Apple" and "apple" would generate different subword merges
+                    during training, bloating the vocabulary unnecessarily. Normalizing first ensures the BPE algorithm
+                    always sees the same canonical form.</div>
+            </div>
+
+            <div class="step-row">
+                <div class="step-num">3</div>
+                <div class="step-body"><b>Attach a Whitespace pre-tokenizer</b><br>
+                    Pre-tokenization splits the normalized string into "words" before BPE runs. Whitespace splitting
+                    means BPE never merges across word boundaries — "do in" will never become one token. This makes the
+                    resulting vocabulary more interpretable.</div>
+            </div>
+            <pre><span class="kw">from</span> tokenizers.pre_tokenizers <span class="kw">import</span> Whitespace
+
+bert_tokenizer.pre_tokenizer = Whitespace()</pre>
+
+            <div class="step-row">
+                <div class="step-num">4</div>
+                <div class="step-body"><b>Create and configure the BPE trainer</b><br>
+                    The trainer holds the hyperparameters for learning the vocabulary from your corpus. It finds the
+                    most frequent pairs of characters/subwords and merges them repeatedly until the vocab reaches the
+                    target size.</div>
+            </div>
+            <pre><span class="kw">from</span> tokenizers.trainers <span class="kw">import</span> BpeTrainer
+
+bert_trainer = BpeTrainer(
+    vocab_size=<span class="num">32000</span>,
+    special_tokens=[<span class="st">"[PAD]"</span>, <span class="st">"[UNK]"</span>, <span class="st">"[CLS]"</span>, <span class="st">"[SEP]"</span>, <span class="st">"[MASK]"</span>],
+    continuing_subword_prefix=<span class="st">'##'</span>
+)</pre>
+            <div class="callout orange">
+                <b>continuing_subword_prefix='##'</b> — this tells the trainer: any subword that results from splitting
+                a word in the middle should be prefixed with ##. So "playing" → ['play', '##ing']. Without this, the
+                decoder wouldn't know which tokens to merge back into a word.
+            </div>
+
+            <div class="step-row">
+                <div class="step-num">5</div>
+                <div class="step-body"><b>Train on your corpus</b><br>
+                    The trainer reads through your text files, counts character and subword pair frequencies, and builds
+                    the merge rules. After this, the tokenizer has a learned vocabulary specific to your data.</div>
+            </div>
+            <pre>files = [<span class="st">"train.txt"</span>]  <span class="cm"># your text corpus files</span>
+bert_tokenizer.train(files, bert_trainer)</pre>
+        </div>
+
+        <!-- ═══════════════ POST-PROCESSING ═══════════════ -->
+        <div class="section" id="postproc">
+            <h2>Post-processing — Inserting Special Tokens</h2>
+            <p>At this point, the tokenizer can split text into subwords. But it doesn't yet know it should add [CLS] at
+                the start and [SEP] at the end. That's what the post-processor does — it's a final transformation
+                applied <em>after</em> BPE tokenization, before the IDs are returned to you.</p>
+
+            <div class="callout">
+                <b>Why is this a separate step?</b> Because it's model-specific, not language-specific. The BPE
+                vocabulary can be reused for many models, but each model has its own preferred input format. Keeping
+                post-processing separate means you swap only this piece when changing models.
+            </div>
+
+            <hr class="divider">
+            <h3>TemplateProcessing — how the template works</h3>
+            <p>The template is a string that describes the desired output format using placeholders. <span
+                    class="inline-code">$0</span> means "insert all tokens from the input here." For pairs, <span
+                    class="inline-code">$A</span> and <span class="inline-code">$B</span> are the two sentences.</p>
+
+            <div class="grid2">
+                <div class="card">
+                    <div class="card-title">single= template</div>
+                    <div class="card-body"><span class="inline-code">"[CLS] $0 [SEP]"</span><br><br>For one sentence. $0
+                        = all tokens from input. type_id defaults to 0 for everything.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">pair= template</div>
+                    <div class="card-body"><span class="inline-code">"[CLS] $A [SEP] $B:1"</span><br><br>For two
+                        sentences. $A = sentence A tokens (type_id 0). $B:1 = sentence B tokens (type_id 1). The :1 sets
+                        the segment ID.</div>
+                </div>
+            </div>
+
+            <pre><span class="kw">from</span> tokenizers.processors <span class="kw">import</span> TemplateProcessing
+
+bert_tokenizer.post_processor = TemplateProcessing(
+    single=<span class="st">"[CLS] $0 [SEP]"</span>,
+    pair=<span class="st">"[CLS] $A [SEP] $B:1"</span>,
+    special_tokens=[
+        (<span class="st">"[CLS]"</span>, <span class="num">2</span>),  <span class="cm"># string name + its vocabulary ID</span>
+        (<span class="st">"[SEP]"</span>, <span class="num">3</span>),  <span class="cm"># must match IDs assigned during training</span>
+    ],
+)</pre>
+
+            <div class="why-box">
+                <div class="q">Why must we pass the IDs explicitly?</div>
+                <div class="a">The post-processor runs after BPE — but it inserts tokens by their string names
+                    ("[CLS]"). It needs to know the corresponding integer ID to write into the output ids array. These
+                    must exactly match what BpeTrainer assigned (CLS=2, SEP=3).</div>
+            </div>
+
+            <h3>type_id — the segment embedding signal</h3>
+            <div class="context-block">
+                <div class="label">What type_id does</div>
+                Each output token gets two things: its token ID (from the vocabulary) and a type_id (0 or 1).
+                BERT adds a learned "segment embedding" for each type_id — this is how it knows, for a pair of
+                sentences, which tokens belong to sentence A and which to sentence B.
+                The <span class="inline-code">:1</span> in <span class="inline-code">$B:1</span> sets type_id=1 for all
+                sentence B tokens. Everything without a suffix gets type_id=0.
+            </div>
+
+            <hr class="divider">
+            <h3>Outputs from the lecture</h3>
+            <div class="seq">
+                <div class="seq-label">Single sentence output</div>
+                <span class="tag cls">[CLS]</span><span class="tag tok">all</span><span
+                    class="tag tok">these</span><span class="tag tok">are</span><span class="tag tok">···</span><span
+                    class="tag tok">more</span><span class="tag sep">[SEP]</span>
+            </div>
+            <div class="seq">
+                <div class="seq-label">Sentence pair output</div>
+                <span class="tag cls">[CLS]</span><span class="tag tok">all ··· more</span><span
+                    class="tag sep">[SEP]</span><span class="tag tok">we</span><span class="tag tok">have</span><span
+                    class="tag tok">a</span><span class="tag tok">long</span><span class="tag tok">way</span><span
+                    class="tag tok">to</span><span class="tag tok">go</span><span class="tag tok">!</span>
+            </div>
+
+            <div class="callout green">
+                <b>Flexibility this gives you:</b> If a future model wants [CLS] at the <em>end</em> rather than the
+                beginning, you'd just write <span class="inline-code">single="$0 [SEP] [CLS]"</span>. The tokenizer core
+                stays unchanged — only this template changes.
+            </div>
+        </div>
+
+        <!-- ═══════════════ DECODING ═══════════════ -->
+        <div class="section" id="decode">
+            <h2>Decoding — Token IDs Back to Text</h2>
+            <p>After a model processes tokens and produces output IDs (e.g. in a generation or MLM task), you need to
+                convert those IDs back into readable text. This is decoding. It's the reverse of encoding — but it has
+                its own complications.</p>
+
+            <h3>What decoding needs to do</h3>
+            <div class="grid2">
+                <div class="card">
+                    <div class="card-title">1. Remove special tokens</div>
+                    <div class="card-body">Tokens like [PAD], [CLS], and [SEP] were added for the model's benefit. The
+                        end user shouldn't see them in the output. The decoder strips them automatically.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">2. Merge ## subwords</div>
+                    <div class="card-body">BPE split "hf" into ['h', '##f']. The decoder needs to join them back.
+                        Without this step, every split word appears fragmented and unreadable.</div>
+                </div>
+            </div>
+
+            <hr class="divider">
+            <h3>The problem — decoding without a decoder</h3>
+            <pre><span class="cm"># IDs from the previous encoding step</span>
+plain_tokens = bert_tokenizer.decode(ids)
+<span class="kw">print</span>(plain_tokens)</pre>
+            <div class="decode-row">
+                <span class="decode-label">Output:</span>
+                <span class="output bad">all these are so simple to do in h ##f . let ' s do more we have a long way to
+                    go !</span>
+            </div>
+            <p style="font-size:13px;margin-top:.5rem">Special tokens ([CLS], [SEP]) are removed ✓ — but <span
+                    class="inline-code">h ##f</span> is not merged ✗. The ## is just printed as-is.</p>
+
+            <hr class="divider">
+            <h3>The fix — attach a WordPiece decoder</h3>
+            <p>The WordPiece decoder knows the ## convention: any token starting with ## is a continuation and must be
+                stripped of its prefix and concatenated to the previous token.</p>
+            <pre><span class="kw">from</span> tokenizers.decoders <span class="kw">import</span> WordPiece
+
+bert_tokenizer.decoder = WordPiece(prefix=<span class="st">'##'</span>)
+
+plain_tokens = bert_tokenizer.decode(ids)
+<span class="kw">print</span>(plain_tokens)</pre>
+            <div class="decode-row">
+                <span class="decode-label">Output now:</span>
+                <span class="output good">all these are so simple to do in hf. let ' s do more we have a long way to
+                    go!</span>
+            </div>
+
+            <div class="why-box" style="margin-top:1rem">
+                <div class="q">Why is the decoder a separate configurable component?</div>
+                <div class="a">Because different tokenizer families use different continuation signals. BERT uses ##.
+                    GPT-2 uses Ġ (a Unicode space character prefixed to non-initial pieces). SentencePiece uses ▁ to
+                    mark word starts. Keeping the decoder swappable means the same Tokenizer framework works for all of
+                    them — you just plug in the right decoder for your model.</div>
+            </div>
+
+            <div class="callout orange" style="margin-top:1rem">
+                <b>Decoder must match the tokenizer type:</b><br>
+                BERT / WordPiece → <span class="inline-code">WordPiece(prefix='##')</span><br>
+                GPT-2 / Byte-level BPE → <span class="inline-code">ByteLevel()</span><br>
+                SentencePiece → <span class="inline-code">Metaspace()</span><br>
+                Full list: <a href="https://huggingface.co/docs/tokenizers/api/decoders" target="_blank"
+                    style="color:var(--accent)">HuggingFace Tokenizers Decoders docs</a>
+            </div>
+
+            <hr class="divider">
+            <h3>Putting it all together — encoder + decoder</h3>
+            <div class="context-block">
+                <div class="label">Mental model</div>
+                Think of the tokenizer as having two "sides." The encoder side (normalizer → pre-tokenizer → BPE model →
+                post-processor) converts text to IDs. The decoder side converts IDs back to text. You configure both on
+                the same Tokenizer object. Until you set a decoder, only the encoder side works properly.
+            </div>
+            <pre><span class="cm"># — Encoder side (configured earlier) —</span>
+bert_tokenizer.normalizer     = normalizers.Lowercase()
+bert_tokenizer.pre_tokenizer  = Whitespace()
+bert_tokenizer.post_processor = TemplateProcessing(...)
+
+<span class="cm"># — Decoder side (new addition) —</span>
+bert_tokenizer.decoder = WordPiece(prefix=<span class="st">'##'</span>)
+
+<span class="cm"># Now the full round-trip works correctly</span>
+ids   = bert_tokenizer.encode(<span class="st">"Hello HuggingFace!"</span>).ids
+clean = bert_tokenizer.decode(ids)
+<span class="kw">print</span>(clean)  <span class="cm"># → "hello huggingface!"</span></pre>
+        </div>
+
+        <!-- ═══════════════ ALL CODES ═══════════════ -->
+        <div class="section" id="allcodes">
+            <h2>All Codes — Exact Slide Code + Full Pipeline</h2>
+            <p>Exact code from each slide, in order. Copy any block independently.</p>
+
+            <h4>Slide 2 — Normalizer, pre-tokenizer, trainer setup</h4>
+            <pre>bert_tokenizer.normalizer    = Lowercase()
+bert_tokenizer.pre_tokenizer = Whitespace()
+bert_trainer = BpeTrainer(vocab_size=<span class="num">32000</span>,
+                          special_tokens=[<span class="st">"[PAD]"</span>,<span class="st">"[UNK]"</span>,<span class="st">"[CLS]"</span>,<span class="st">"[SEP]"</span>,<span class="st">"[MASK]"</span>],
+                          continuing_subword_prefix=<span class="st">'##'</span>)</pre>
+
+            <h4>Slide 3 — Post processor</h4>
+            <pre><span class="kw">from</span> tokenizers.processors <span class="kw">import</span> TemplateProcessing
+
+bert_tokenizer.post_processor = TemplateProcessing(
+    single=<span class="st">"[CLS] $0 [SEP]"</span>,
+    pair=<span class="st">"[CLS] $A [SEP] $B:1"</span>,
+    special_tokens=[(<span class="st">"[CLS]"</span>, <span class="num">2</span>), (<span class="st">"[SEP]"</span>, <span class="num">3</span>)],
+)
+
+<span class="kw">def</span> get_examples(batch_size=10000):
+    for i in range(0, len(ds), batch_size):
+        yield ds['text'][i : i+batch_size]
+
+
+bert_tokenizer.train_from_iterator(
+    get_examples(batch_size=10000), trainer=bert_trainer, length=len(ds)
+     )
+
+</pre>
+
+
+
+            <h4>Slide 4 — Encode single sentence</h4>
+<pre>text = <span class="st">"All these are so simple to do in HF. Let's do more"</span>
+encoded = bert_tokenizer.encode(text)
+tokens  = encoded.tokens
+ids     = encoded.ids
+out_dict = {<span class="st">'tokens'</span>: tokens, <span class="st">'ids'</span>: ids}
+pprint(out_dict, depth=<span class="num">2</span>, compact=<span class="bi">True</span>)
+
+<span class="cm"># Output:</span>
+<span class="cm"># {'ids': [2, 270, 956, 336, 231, 2534, 141, 206, 157, 56, 104, 24, 462, 17, 67,</span>
+<span class="cm">#          206, 387, 3],</span>
+<span class="cm">#  'tokens': ['[CLS]','all','these','are','so','simple','to','do','in',</span>
+<span class="cm">#             'h','##f','.','let',"'",'s','do','more','[SEP]']}</span></pre>
+
+            <h4>Slide 5 — Encode sentence pair</h4>
+            <pre>text = <span class="st">"All these are so simple to do in HF. Let's do more"</span>
+pair = <span class="st">"We have a long way to go!"</span>
+encoded = bert_tokenizer.encode(text, pair)
+tokens  = encoded.tokens
+ids     = encoded.ids
+out_dict = {<span class="st">'tokens'</span>: tokens, <span class="st">'ids'</span>: ids}
+pprint(out_dict, depth=<span class="num">2</span>, compact=<span class="bi">True</span>)
+
+<span class="cm"># Output:</span>
+<span class="cm"># {'ids': [2, 270, 956, 336, 231, 2534, 141, 206, 157, 56, 104, 24, 462, 17, 67,</span>
+<span class="cm">#          206, 387, 3, 214, 250, 49, 490, 415, 141, 260, 12],</span>
+<span class="cm">#  'tokens': ['[CLS]','all','these','are','so','simple','to','do','in',</span>
+<span class="cm">#             'h','##f','.','let',"'",'s','do','more','[SEP]',</span>
+<span class="cm">#             'we','have','a','long','way','to','go','!']}</span></pre>
+
+            <h4>Slide 6 — Decode (broken — subwords not merged)</h4>
+            <pre>plain_tokens = bert_tokenizer.decode(ids)
+<span class="kw">print</span>(plain_tokens)
+
+<span class="cm"># Output:</span>
+<span class="cm"># all these are so simple to do in h ##f . let ' s do more we have a long way to go !</span>
+<span class="cm"># ↑ '##f' is still separate — not merged with 'h'</span></pre>
+
+            <h4>Slide 7 — Add WordPiece decoder (fixes the problem)</h4>
+            <pre><span class="kw">from</span> tokenizers.decoders <span class="kw">import</span> WordPiece
+
+bert_tokenizer.decoder = WordPiece(prefix=<span class="st">'##'</span>)
+
+plain_tokens = bert_tokenizer.decode(ids)
+<span class="kw">print</span>(plain_tokens)
+
+<span class="cm"># Output:</span>
+<span class="cm"># all these are so simple to do in hf. let ' s do more we have a long way to go!</span>
+<span class="cm"># ↑ 'h' + '##f' are now merged into 'hf'  ✓</span></pre>
+
+            <hr class="divider">
+            <h4>Full pipeline — all imports at once</h4>
+            <pre><span class="kw">from</span> tokenizers <span class="kw">import</span> Tokenizer, normalizers
+<span class="kw">from</span> tokenizers.models <span class="kw">import</span> BPE
+<span class="kw">from</span> tokenizers.pre_tokenizers <span class="kw">import</span> Whitespace
+<span class="kw">from</span> tokenizers.trainers <span class="kw">import</span> BpeTrainer
+<span class="kw">from</span> tokenizers.processors <span class="kw">import</span> TemplateProcessing
+<span class="kw">from</span> tokenizers.decoders <span class="kw">import</span> WordPiece
+<span class="kw">from</span> pprint <span class="kw">import</span> pprint
+
+<span class="cm"># 1. Create tokenizer</span>
+bert_tokenizer = Tokenizer(BPE(unk_token=<span class="st">"[UNK]"</span>))
+
+<span class="cm"># 2. Normalizer + pre-tokenizer</span>
+bert_tokenizer.normalizer    = normalizers.Lowercase()
+bert_tokenizer.pre_tokenizer = Whitespace()
+
+<span class="cm"># 3. Train</span>
+bert_trainer = BpeTrainer(
+    vocab_size=<span class="num">32000</span>,
+    special_tokens=[<span class="st">"[PAD]"</span>, <span class="st">"[UNK]"</span>, <span class="st">"[CLS]"</span>, <span class="st">"[SEP]"</span>, <span class="st">"[MASK]"</span>],
+    continuing_subword_prefix=<span class="st">'##'</span>
+)
+bert_tokenizer.train([<span class="st">"train.txt"</span>], bert_trainer)
+
+<span class="cm"># 4. Post-processor</span>
+bert_tokenizer.post_processor = TemplateProcessing(
+    single=<span class="st">"[CLS] $0 [SEP]"</span>,
+    pair=<span class="st">"[CLS] $A [SEP] $B:1"</span>,
+    special_tokens=[(<span class="st">"[CLS]"</span>, <span class="num">2</span>), (<span class="st">"[SEP]"</span>, <span class="num">3</span>)],
+)
+
+<span class="cm"># 5. Decoder</span>
+bert_tokenizer.decoder = WordPiece(prefix=<span class="st">'##'</span>)
+
+<span class="cm"># 6. Use it</span>
+ids   = bert_tokenizer.encode(<span class="st">"Hello HuggingFace!"</span>).ids
+clean = bert_tokenizer.decode(ids)
+<span class="kw">print</span>(clean)  <span class="cm"># → "hello huggingface!"</span></pre>
+
+            <div class="callout green" style="margin-top:1rem">
+                <b>One-line summary of each component:</b><br>
+                <span class="inline-code">normalizer</span> → lowercase before anything else<br>
+                <span class="inline-code">pre_tokenizer</span> → split on spaces so BPE never crosses word
+                boundaries<br>
+                <span class="inline-code">BpeTrainer</span> → learn subword merge rules; 32k vocab; ## for
+                continuations<br>
+                <span class="inline-code">post_processor</span> → wrap output with [CLS] and [SEP] per BERT's format<br>
+                <span class="inline-code">decoder</span> → recognise ## prefix and merge subwords back into full tokens
+            </div>
+        </div>
+
+    </div>
+    <script>
+        function show(id, btn) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            btn.classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        let isDark = true;
+        function toggleTheme() {
+            isDark = !isDark;
+            const root = document.documentElement;
+            const track = document.getElementById('track');
+            const icon = document.getElementById('toggleIcon');
+            const label = document.getElementById('toggleLabel');
+            if (isDark) {
+                root.classList.remove('light');
+                track.classList.add('on');
+                icon.textContent = '🌙';
+                label.textContent = 'Dark';
+            } else {
+                root.classList.add('light');
+                track.classList.remove('on');
+                icon.textContent = '☀️';
+                label.textContent = 'Light';
+            }
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // Restore saved preference
+        (function () {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') {
+                isDark = true;
+                toggleTheme();
+            }
+        })();
+    </script>
+</body>
+
+</html>

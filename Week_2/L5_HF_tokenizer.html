@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hugging Face Tokenizers — Complete Notes</title>
+        <style>
+                @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+
+                :root {
+                        --bg: #0f1117;
+                        --surface: #1a1d2e;
+                        --surface2: #232640;
+                        --border: #2e3155;
+                        --accent: #7c6af7;
+                        --accent2: #4fc3f7;
+                        --accent3: #f06292;
+                        --green: #66bb6a;
+                        --orange: #ffa726;
+                        --yellow: #fff176;
+                        --text: #e2e4f0;
+                        --muted: #8b8fa8;
+                        --mono: 'JetBrains Mono', monospace;
+                        --sans: 'Inter', sans-serif;
+                }
+
+                * {
+                        box-sizing: border-box;
+                        margin: 0;
+                        padding: 0;
+                }
+
+                body {
+                        background: var(--bg);
+                        color: var(--text);
+                        font-family: var(--sans);
+                        font-size: 15px;
+                        line-height: 1.7;
+                        padding: 32px 16px 64px;
+                }
+
+                .container {
+                        max-width: 880px;
+                        margin: 0 auto;
+                }
+
+                .header {
+                        text-align: center;
+                        padding: 48px 0 40px;
+                        border-bottom: 1px solid var(--border);
+                        margin-bottom: 48px;
+                }
+
+                .header h1 {
+                        font-size: 2.2rem;
+                        font-weight: 700;
+                        background: linear-gradient(135deg, #ff9a3c, var(--accent2));
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        margin-bottom: 8px;
+                }
+
+                .header p {
+                        color: var(--muted);
+                        font-size: 0.95rem;
+                }
+
+                .part-label {
+                        display: inline-block;
+                        font-family: var(--mono);
+                        font-size: 0.7rem;
+                        font-weight: 600;
+                        color: #ff9a3c;
+                        background: rgba(255, 154, 60, 0.1);
+                        border: 1px solid rgba(255, 154, 60, 0.3);
+                        border-radius: 4px;
+                        padding: 2px 10px;
+                        letter-spacing: 0.08em;
+                        text-transform: uppercase;
+                        margin-bottom: 10px;
+                }
+
+                .section {
+                        margin-bottom: 56px;
+                }
+
+                .section h2 {
+                        font-size: 1.35rem;
+                        font-weight: 700;
+                        color: #fff;
+                        margin-bottom: 16px;
+                }
+
+                .section h3 {
+                        font-size: 1rem;
+                        font-weight: 600;
+                        color: var(--accent2);
+                        margin: 20px 0 8px;
+                }
+
+                .section p {
+                        color: var(--text);
+                        margin-bottom: 12px;
+                }
+
+                .card {
+                        background: var(--surface);
+                        border: 1px solid var(--border);
+                        border-radius: 10px;
+                        padding: 20px 24px;
+                        margin-bottom: 16px;
+                }
+
+                /* Syntax-highlighted code block */
+                .code-block {
+                        background: #080a12;
+                        border: 1px solid var(--border);
+                        border-radius: 10px;
+                        margin: 14px 0;
+                        overflow: hidden;
+                }
+
+                .code-header {
+                        background: var(--surface2);
+                        padding: 8px 16px;
+                        font-family: var(--mono);
+                        font-size: 0.72rem;
+                        color: var(--muted);
+                        border-bottom: 1px solid var(--border);
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                }
+
+                .code-dot {
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 50%;
+                }
+
+                .code-dot.r {
+                        background: #ff5f57;
+                }
+
+                .code-dot.y {
+                        background: #febc2e;
+                }
+
+                .code-dot.g {
+                        background: #28c840;
+                }
+
+                .code-body {
+                        padding: 18px 20px;
+                        font-family: var(--mono);
+                        font-size: 0.82rem;
+                        line-height: 2;
+                        white-space: pre;
+                        overflow-x: auto;
+                }
+
+                /* Syntax colors */
+                .kw {
+                        color: #c792ea;
+                }
+
+                /* keyword: from, import, def */
+                .fn {
+                        color: #82aaff;
+                }
+
+                /* function name */
+                .cls {
+                        color: var(--accent2);
+                }
+
+                /* class name */
+                .st {
+                        color: var(--green);
+                }
+
+                /* string */
+                .cm {
+                        color: var(--muted);
+                        font-style: italic;
+                }
+
+                /* comment */
+                .nm {
+                        color: var(--orange);
+                }
+
+                /* number / special token */
+                .op {
+                        color: #89ddff;
+                }
+
+                /* operator = . () */
+                .var {
+                        color: var(--text);
+                }
+
+                /* Callout */
+                .callout {
+                        border-left: 3px solid var(--accent);
+                        background: rgba(124, 106, 247, 0.07);
+                        border-radius: 0 8px 8px 0;
+                        padding: 12px 16px;
+                        margin: 16px 0;
+                        font-size: 0.92rem;
+                }
+
+                .callout.green {
+                        border-color: var(--green);
+                        background: rgba(102, 187, 106, 0.07);
+                }
+
+                .callout.orange {
+                        border-color: var(--orange);
+                        background: rgba(255, 167, 38, 0.07);
+                }
+
+                .callout.pink {
+                        border-color: var(--accent3);
+                        background: rgba(240, 98, 146, 0.07);
+                }
+
+                .callout.yellow {
+                        border-color: var(--yellow);
+                        background: rgba(255, 241, 118, 0.06);
+                }
+
+                /* Pipeline flow */
+                .pipeline {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 0;
+                        margin: 20px 0;
+                }
+
+                .pipe-step {
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 16px;
+                }
+
+                .pipe-left {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        flex-shrink: 0;
+                        width: 40px;
+                }
+
+                .pipe-num {
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-family: var(--mono);
+                        font-size: 0.8rem;
+                        font-weight: 700;
+                        flex-shrink: 0;
+                }
+
+                .pipe-num.n1 {
+                        background: rgba(255, 154, 60, 0.15);
+                        color: #ff9a3c;
+                        border: 1px solid rgba(255, 154, 60, 0.4);
+                }
+
+                .pipe-num.n2 {
+                        background: rgba(124, 106, 247, 0.15);
+                        color: var(--accent);
+                        border: 1px solid rgba(124, 106, 247, 0.4);
+                }
+
+                .pipe-num.n3 {
+                        background: rgba(79, 195, 247, 0.15);
+                        color: var(--accent2);
+                        border: 1px solid rgba(79, 195, 247, 0.4);
+                }
+
+                .pipe-num.n4 {
+                        background: rgba(102, 187, 106, 0.15);
+                        color: var(--green);
+                        border: 1px solid rgba(102, 187, 106, 0.4);
+                }
+
+                .pipe-num.n5 {
+                        background: rgba(240, 98, 146, 0.15);
+                        color: var(--accent3);
+                        border: 1px solid rgba(240, 98, 146, 0.4);
+                }
+
+                .pipe-line {
+                        width: 2px;
+                        background: var(--border);
+                        flex-grow: 1;
+                        min-height: 24px;
+                        margin: 2px 0;
+                }
+
+                .pipe-content {
+                        padding: 4px 0 24px;
+                        flex-grow: 1;
+                }
+
+                .pipe-content h4 {
+                        font-size: 0.95rem;
+                        font-weight: 700;
+                        margin-bottom: 4px;
+                }
+
+                .pipe-content p {
+                        font-size: 0.87rem;
+                        color: var(--muted);
+                        margin: 0;
+                }
+
+                .pipe-content .example {
+                        margin-top: 10px;
+                        background: var(--surface2);
+                        border-radius: 6px;
+                        padding: 10px 14px;
+                        font-family: var(--mono);
+                        font-size: 0.8rem;
+                        line-height: 1.8;
+                }
+
+                .n1~.pipe-content h4 {
+                        color: #ff9a3c;
+                }
+
+                .n2~.pipe-content h4 {
+                        color: var(--accent);
+                }
+
+                .n3~.pipe-content h4 {
+                        color: var(--accent2);
+                }
+
+                .n4~.pipe-content h4 {
+                        color: var(--green);
+                }
+
+                .n5~.pipe-content h4 {
+                        color: var(--accent3);
+                }
+
+                /* Table */
+                table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 0.88rem;
+                        margin: 16px 0;
+                }
+
+                th {
+                        background: var(--surface2);
+                        color: var(--accent2);
+                        font-weight: 600;
+                        text-align: left;
+                        padding: 10px 14px;
+                        border-bottom: 1px solid var(--border);
+                }
+
+                td {
+                        padding: 9px 14px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text);
+                }
+
+                tr:last-child td {
+                        border-bottom: none;
+                }
+
+                tr:hover td {
+                        background: var(--surface);
+                }
+
+                code {
+                        font-family: var(--mono);
+                        font-size: 0.82rem;
+                        color: var(--accent2);
+                        background: rgba(79, 195, 247, 0.08);
+                        padding: 1px 6px;
+                        border-radius: 3px;
+                }
+
+                /* Two-col */
+                .two-col {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 16px;
+                        margin: 16px 0;
+                }
+
+                /* Method card */
+                .method-card {
+                        background: var(--surface);
+                        border: 1px solid var(--border);
+                        border-radius: 10px;
+                        overflow: hidden;
+                        margin-bottom: 20px;
+                }
+
+                .method-header {
+                        background: var(--surface2);
+                        padding: 10px 18px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        border-bottom: 1px solid var(--border);
+                }
+
+                .method-name {
+                        font-family: var(--mono);
+                        font-size: 0.88rem;
+                        color: #82aaff;
+                        font-weight: 600;
+                }
+
+                .method-badge {
+                        font-size: 0.7rem;
+                        color: var(--muted);
+                        background: var(--bg);
+                        border: 1px solid var(--border);
+                        border-radius: 4px;
+                        padding: 1px 8px;
+                        font-family: var(--mono);
+                }
+
+                .method-body {
+                        padding: 16px 18px;
+                }
+
+                .method-body p {
+                        font-size: 0.88rem;
+                        color: var(--muted);
+                        margin-bottom: 10px;
+                }
+
+                /* Encoding output visual */
+                .encoding-box {
+                        background: var(--surface2);
+                        border: 1px solid var(--border);
+                        border-radius: 8px;
+                        padding: 14px 18px;
+                        font-family: var(--mono);
+                        font-size: 0.82rem;
+                        line-height: 2;
+                }
+
+                .enc-key {
+                        color: var(--accent3);
+                }
+
+                .enc-val {
+                        color: var(--green);
+                }
+
+                .enc-label {
+                        color: var(--muted);
+                        font-size: 0.75rem;
+                }
+
+                hr {
+                        border: none;
+                        border-top: 1px solid var(--border);
+                        margin: 48px 0;
+                }
+
+                @media (max-width: 600px) {
+                        .two-col {
+                                grid-template-columns: 1fr;
+                        }
+                }
+        </style>
+</head>
+
+<body>
+        <div class="container">
+
+                <div class="header">
+                        <h1>🤗 Hugging Face Tokenizers</h1>
+                        <p>Complete notes — Pipeline · Components · Code Examples · Methods</p>
+                </div>
+
+                <!-- SECTION 1: WHY -->
+                <div class="section">
+                        <div class="part-label">Section 1</div>
+                        <h2>Why Not Just Split on Spaces?</h2>
+
+                        <p>Whitespace tokenization seems simple but breaks down quickly in practice.</p>
+
+                        <div class="two-col">
+                                <div class="card">
+                                        <h3>Problems with word-level</h3>
+                                        <p style="font-size:0.87rem; color:var(--muted);">"enjoy" and "enjoyed" become
+                                                separate tokens even though they share a root. New words (scientific
+                                                terms, names) are never seen during training → OOV problem. Vocabulary
+                                                can reach millions of entries.</p>
+                                </div>
+                                <div class="card">
+                                        <h3>Problems with char-level</h3>
+                                        <p style="font-size:0.87rem; color:var(--muted);">Each character is a token.
+                                                "hello" → [h, e, l, l, o] = 5 tokens. Sequences become extremely long.
+                                                The model has to learn meaning from scratch — no notion of words.</p>
+                                </div>
+                        </div>
+
+                        <div class="callout green">
+                                <strong>Sweet spot → Subword tokenization</strong><br>
+                                Vocabulary of 30K–50K tokens. Unknown words split into known subwords. Works across
+                                languages including Japanese/Chinese (no spaces). This is what BPE, WordPiece, and
+                                SentencePiece all do.
+                        </div>
+
+                        <div class="callout yellow">
+                                <strong>The Hugging Face <code>tokenizers</code> library</strong> provides a ready-made,
+                                fast implementation of all these algorithms in a single unified API — no need to
+                                implement from scratch.
+                        </div>
+                </div>
+
+                <hr>
+
+                <!-- SECTION 2: PIPELINE -->
+                <div class="section">
+                        <div class="part-label">Section 2</div>
+                        <h2>The Complete Tokenization Pipeline</h2>
+
+                        <p>Every time you call <code>encode()</code>, the input passes through all 5 stages
+                                automatically.</p>
+
+                        <div class="pipeline">
+
+                                <div class="pipe-step">
+                                        <div class="pipe-left">
+                                                <div class="pipe-num n1">1</div>
+                                                <div class="pipe-line"></div>
+                                        </div>
+                                        <div class="pipe-content">
+                                                <h4>Raw Input Text</h4>
+                                                <p>Whatever the user provides — could be messy, mixed case, with
+                                                        punctuation.</p>
+                                                <div class="example"><span style="color:var(--muted)">input →</span>
+                                                        <span style="color:#fff">"Hmm,, I know I DON'T know"</span>
+                                                </div>
+                                        </div>
+                                </div>
+
+                                <div class="pipe-step">
+                                        <div class="pipe-left">
+                                                <div class="pipe-num n2">2</div>
+                                                <div class="pipe-line"></div>
+                                        </div>
+                                        <div class="pipe-content">
+                                                <h4>Normalization</h4>
+                                                <p>Clean and standardize text: lowercase, remove accents, unicode fixes.
+                                                        Makes sure "Café" and "cafe" are treated the same.</p>
+                                                <div class="example"><span style="color:var(--muted)">lowercase →</span>
+                                                        <span style="color:var(--accent)">"hmm,, i know i don't
+                                                                know"</span>
+                                                        <span style="color:var(--muted)">strip accents →</span> <span
+                                                                style="color:var(--accent)">"cafe" (if café was
+                                                                input)</span>
+                                                </div>
+                                        </div>
+                                </div>
+
+                                <div class="pipe-step">
+                                        <div class="pipe-left">
+                                                <div class="pipe-num n3">3</div>
+                                                <div class="pipe-line"></div>
+                                        </div>
+                                        <div class="pipe-content">
+                                                <h4>Pre-tokenization</h4>
+                                                <p>Split text into initial chunks <em>before</em> the main algorithm
+                                                        runs. Common strategy: split on whitespace and punctuation.</p>
+                                                <div class="example"><span style="color:var(--muted)">whitespace split
+                                                                →</span>
+                                                        <span style="color:var(--accent2)">["hmm", ",,", "i", "know",
+                                                                "i", "don't", "know"]</span>
+
+                                                        <span style="color:var(--muted)">whitespace + punct →</span>
+                                                        <span style="color:var(--accent2)">["hmm", ",", ",", "i",
+                                                                "know", "i", "don", "'", "t", "know"]</span>
+                                                </div>
+                                        </div>
+                                </div>
+
+                                <div class="pipe-step">
+                                        <div class="pipe-left">
+                                                <div class="pipe-num n4">4</div>
+                                                <div class="pipe-line"></div>
+                                        </div>
+                                        <div class="pipe-content">
+                                                <h4>Tokenization (Core Algorithm)</h4>
+                                                <p>Apply the chosen subword algorithm (BPE / WordPiece / SentencePiece)
+                                                        on each pre-token chunk using the learned vocabulary.</p>
+                                                <div class="example"><span style="color:var(--muted)">BPE
+                                                                example:</span>
+                                                        "playing" → <span style="color:var(--green)">play</span> + <span
+                                                                style="color:var(--green)">ing</span>
+                                                        "don't" → <span style="color:var(--green)">don</span> + <span
+                                                                style="color:var(--green)">'t</span></div>
+                                        </div>
+                                </div>
+
+                                <div class="pipe-step">
+                                        <div class="pipe-left">
+                                                <div class="pipe-num n5">5</div>
+                                        </div>
+                                        <div class="pipe-content">
+                                                <h4>Post-processing</h4>
+                                                <p>Add special tokens required by the model. BERT needs [CLS] at start
+                                                        and [SEP] at end. GPT needs &lt;BOS&gt;/&lt;EOS&gt;.</p>
+                                                <div class="example"><span style="color:var(--muted)">BERT style
+                                                                →</span>
+                                                        <span style="color:var(--accent3)">[CLS]</span> <span
+                                                                style="color:var(--text)">hmm , , i know i don't
+                                                                know</span> <span
+                                                                style="color:var(--accent3)">[SEP]</span>
+
+                                                        <span style="color:var(--muted)">GPT style →</span>
+                                                        <span style="color:var(--accent3)">&lt;BOS&gt;</span> <span
+                                                                style="color:var(--text)">hmm , , i know i don't
+                                                                know</span> <span
+                                                                style="color:var(--accent3)">&lt;EOS&gt;</span>
+                                                </div>
+                                        </div>
+                                </div>
+
+                        </div>
+                </div>
+
+                <hr>
+
+                <!-- SECTION 3: COMPONENTS -->
+                <div class="section">
+                        <div class="part-label">Section 3</div>
+                        <h2>Components — What Each Stage Does</h2>
+
+                        <h3>Normalizer options</h3>
+                        <table>
+                                <tr>
+                                        <th>Normalizer</th>
+                                        <th>What it does</th>
+                                        <th>Example</th>
+                                </tr>
+                                <tr>
+                                        <td><code>Lowercase</code></td>
+                                        <td>Converts all text to lowercase</td>
+                                        <td>"Hello" → "hello"</td>
+                                </tr>
+                                <tr>
+                                        <td><code>StripAccents</code></td>
+                                        <td>Removes accent marks</td>
+                                        <td>"café" → "cafe"</td>
+                                </tr>
+                                <tr>
+                                        <td><code>NFD / NFC / NFKC</code></td>
+                                        <td>Unicode normalization forms</td>
+                                        <td>Fixes encoding inconsistencies</td>
+                                </tr>
+                                <tr>
+                                        <td><code>BertNormalizer</code></td>
+                                        <td>Lowercase + strip accents + clean text</td>
+                                        <td>Used in BERT</td>
+                                </tr>
+                                <tr>
+                                        <td><code>Sequence</code></td>
+                                        <td>Chain multiple normalizers together</td>
+                                        <td>Lowercase → StripAccents → NFD</td>
+                                </tr>
+                        </table>
+
+                        <h3>Pre-tokenizer options</h3>
+                        <table>
+                                <tr>
+                                        <th>Pre-tokenizer</th>
+                                        <th>What it does</th>
+                                        <th>Example</th>
+                                </tr>
+                                <tr>
+                                        <td><code>Whitespace</code></td>
+                                        <td>Splits on any whitespace</td>
+                                        <td>"I love AI" → ["I","love","AI"]</td>
+                                </tr>
+                                <tr>
+                                        <td><code>WhitespaceSplit</code></td>
+                                        <td>Same but keeps punctuation attached</td>
+                                        <td>"don't" stays as "don't"</td>
+                                </tr>
+                                <tr>
+                                        <td><code>Punctuation</code></td>
+                                        <td>Also splits on punctuation chars</td>
+                                        <td>"don't" → ["don", "'", "t"]</td>
+                                </tr>
+                                <tr>
+                                        <td><code>BertPreTokenizer</code></td>
+                                        <td>Whitespace + punctuation (BERT standard)</td>
+                                        <td>Most common for BERT-style models</td>
+                                </tr>
+                                <tr>
+                                        <td><code>ByteLevel</code></td>
+                                        <td>Splits at byte boundaries (GPT-2 style)</td>
+                                        <td>Works on raw bytes, language-agnostic</td>
+                                </tr>
+                        </table>
+
+                        <h3>Algorithm options</h3>
+                        <table>
+                                <tr>
+                                        <th>Algorithm</th>
+                                        <th>Direction</th>
+                                        <th>Used in</th>
+                                </tr>
+                                <tr>
+                                        <td><code>BPE</code></td>
+                                        <td>Merges frequent pairs, vocab grows</td>
+                                        <td>GPT-2, GPT-3, RoBERTa</td>
+                                </tr>
+                                <tr>
+                                        <td><code>WordPiece</code></td>
+                                        <td>Merges by score, vocab grows</td>
+                                        <td>BERT, DistilBERT</td>
+                                </tr>
+                                <tr>
+                                        <td><code>Unigram</code></td>
+                                        <td>Probabilistic, vocab shrinks</td>
+                                        <td>T5, ALBERT, XLNet</td>
+                                </tr>
+                        </table>
+                </div>
+
+                <hr>
+
+                <!-- SECTION 4: CODE EXAMPLES -->
+                <div class="section">
+                        <div class="part-label">Section 4</div>
+                        <h2>Code — Building a BPE Tokenizer from Scratch</h2>
+
+                        <div class="callout orange">
+                                <strong>Install first:</strong> <code>pip install tokenizers</code>
+                        </div>
+
+                        <h3>Step 1 — Import and create the tokenizer</h3>
+                        <div class="code-block">
+                                <div class="code-header"><span class="code-dot r"></span><span
+                                                class="code-dot y"></span><span class="code-dot g"></span> python ·
+                                        setup.py</div>
+                                <div class="code-body"><span class="kw">from</span> <span class="var">tokenizers</span>
+                                        <span class="kw">import</span> <span class="cls">Tokenizer</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.models</span> <span
+                                                class="kw">import</span> <span class="cls">BPE</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.normalizers</span>
+                                        <span class="kw">import</span> <span class="cls">Lowercase</span>, <span
+                                                class="cls">Sequence</span>, <span class="cls">StripAccents</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.pre_tokenizers</span>
+                                        <span class="kw">import</span> <span class="cls">Whitespace</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.trainers</span> <span
+                                                class="kw">import</span> <span class="cls">BpeTrainer</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.processors</span>
+                                        <span class="kw">import</span> <span class="cls">TemplateProcessing</span>
+
+                                        <span class="cm"># Step 1: Create tokenizer with BPE algorithm</span>
+                                        <span class="var">tokenizer</span> <span class="op">=</span> <span
+                                                class="cls">Tokenizer</span><span class="op">(</span><span
+                                                class="cls">BPE</span><span class="op">(</span>unk_token<span
+                                                class="op">=</span><span class="st">"[UNK]"</span><span
+                                                class="op">))</span>
+
+                                        <span class="cm"># Step 2: Set normalizer (chain lowercase + strip
+                                                accents)</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="var">normalizer</span> <span class="op">=</span> <span
+                                                class="cls">Sequence</span><span class="op">([</span><span
+                                                class="cls">Lowercase</span><span class="op">(),</span> <span
+                                                class="cls">StripAccents</span><span class="op">()])</span>
+
+                                        <span class="cm"># Step 3: Set pre-tokenizer (split on whitespace)</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="var">pre_tokenizer</span> <span class="op">=</span> <span
+                                                class="cls">Whitespace</span><span class="op">()</span>
+                                </div>
+                        </div>
+
+                        <h3>Step 2 — Train the tokenizer</h3>
+                        <div class="code-block">
+                                <div class="code-header"><span class="code-dot r"></span><span
+                                                class="code-dot y"></span><span class="code-dot g"></span> python ·
+                                        train.py</div>
+                                <div class="code-body"><span class="cm"># Define the trainer — controls vocabulary size
+                                                and special tokens</span>
+                                        <span class="var">trainer</span> <span class="op">=</span> <span
+                                                class="cls">BpeTrainer</span><span class="op">(</span>
+                                        vocab_size<span class="op">=</span><span class="nm">30000</span>,
+                                        min_frequency<span class="op">=</span><span class="nm">2</span>, <span
+                                                class="cm"># token pair must appear at least 2x</span>
+                                        special_tokens<span class="op">=[</span><span class="st">"[UNK]"</span><span
+                                                class="op">,</span> <span class="st">"[CLS]"</span><span
+                                                class="op">,</span> <span class="st">"[SEP]"</span><span
+                                                class="op">,</span> <span class="st">"[PAD]"</span><span
+                                                class="op">,</span> <span class="st">"[MASK]"</span><span
+                                                class="op">]</span>
+                                        <span class="op">)</span>
+
+                                        <span class="cm"># Provide text files to train on</span>
+                                        <span class="var">files</span> <span class="op">= [</span><span
+                                                class="st">"data/train.txt"</span><span class="op">,</span> <span
+                                                class="st">"data/valid.txt"</span><span class="op">]</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="fn">train</span><span class="op">(</span><span
+                                                class="var">files</span><span class="op">,</span> <span
+                                                class="var">trainer</span><span class="op">)</span>
+
+                                        <span class="cm"># What the tokenizer learned from the corpus:</span>
+                                        <span class="cm"># - vocabulary of 30K subwords</span>
+                                        <span class="cm"># - BPE merge rules (which pairs to combine)</span>
+                                        <span class="cm"># - token frequencies</span>
+                                </div>
+                        </div>
+
+                        <h3>Step 3 — Add post-processing (BERT style)</h3>
+                        <div class="code-block">
+                                <div class="code-header"><span class="code-dot r"></span><span
+                                                class="code-dot y"></span><span class="code-dot g"></span> python ·
+                                        postprocess.py</div>
+                                <div class="code-body"><span class="cm"># Automatically add [CLS] and [SEP] to every
+                                                encoded sentence</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="var">post_processor</span> <span class="op">=</span> <span
+                                                class="cls">TemplateProcessing</span><span class="op">(</span>
+                                        single<span class="op">=</span><span class="st">"[CLS] $A [SEP]"</span><span
+                                                class="op">,</span>
+                                        pair<span class="op">=</span><span class="st">"[CLS] $A [SEP] $B:1
+                                                [SEP]:1"</span><span class="op">,</span>
+                                        special_tokens<span class="op">=[</span>
+                                        <span class="op">(</span><span class="st">"[CLS]"</span><span
+                                                class="op">,</span> <span class="var">tokenizer</span><span
+                                                class="op">.</span><span class="fn">token_to_id</span><span
+                                                class="op">(</span><span class="st">"[CLS]"</span><span
+                                                class="op">)),</span>
+                                        <span class="op">(</span><span class="st">"[SEP]"</span><span
+                                                class="op">,</span> <span class="var">tokenizer</span><span
+                                                class="op">.</span><span class="fn">token_to_id</span><span
+                                                class="op">(</span><span class="st">"[SEP]"</span><span
+                                                class="op">)),</span>
+                                        <span class="op">]</span>
+                                        <span class="op">)</span>
+
+                                        <span class="cm"># $A = first sentence, $B = second sentence (for pair tasks
+                                                like NLI)</span>
+                                </div>
+                        </div>
+
+                        <h3>Step 4 — Save and reload</h3>
+                        <div class="code-block">
+                                <div class="code-header"><span class="code-dot r"></span><span
+                                                class="code-dot y"></span><span class="code-dot g"></span> python ·
+                                        save_load.py</div>
+                                <div class="code-body"><span class="cm"># Save the trained tokenizer to disk</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="fn">save</span><span class="op">(</span><span
+                                                class="st">"my_tokenizer.json"</span><span class="op">)</span>
+
+                                        <span class="cm"># Reload later (no need to retrain)</span>
+                                        <span class="var">tokenizer</span> <span class="op">=</span> <span
+                                                class="cls">Tokenizer</span><span class="op">.</span><span
+                                                class="fn">from_file</span><span class="op">(</span><span
+                                                class="st">"my_tokenizer.json"</span><span class="op">)</span>
+                                </div>
+                        </div>
+                </div>
+
+                <hr>
+
+                <!-- SECTION 5: METHODS -->
+                <div class="section">
+                        <div class="part-label">Section 5</div>
+                        <h2>Key Methods with Examples</h2>
+
+                        <!-- encode -->
+                        <div class="method-card">
+                                <div class="method-header">
+                                        <span class="method-name">tokenizer.encode(text)</span>
+                                        <span class="method-badge">single sentence</span>
+                                </div>
+                                <div class="method-body">
+                                        <p>Converts one sentence through the full pipeline → returns an <strong>Encoding
+                                                        object</strong>.</p>
+                                        <div class="code-block">
+                                                <div class="code-header"><span class="code-dot r"></span><span
+                                                                class="code-dot y"></span><span
+                                                                class="code-dot g"></span> python</div>
+                                                <div class="code-body"><span class="var">encoding</span> <span
+                                                                class="op">=</span> <span
+                                                                class="var">tokenizer</span><span
+                                                                class="op">.</span><span class="fn">encode</span><span
+                                                                class="op">(</span><span class="st">"I love Natural
+                                                                Language Processing"</span><span class="op">)</span>
+
+                                                        <span class="fn">print</span><span class="op">(</span><span
+                                                                class="var">encoding</span><span
+                                                                class="op">.</span><span class="var">tokens</span><span
+                                                                class="op">)</span>
+                                                        <span class="cm"># ['[CLS]', 'i', 'love', 'natural', 'language',
+                                                                'processing', '[SEP]']</span>
+
+                                                        <span class="fn">print</span><span class="op">(</span><span
+                                                                class="var">encoding</span><span
+                                                                class="op">.</span><span class="var">ids</span><span
+                                                                class="op">)</span>
+                                                        <span class="cm"># [101, 1045, 2293, 3019, 2653, 6364,
+                                                                102]</span>
+
+                                                        <span class="fn">print</span><span class="op">(</span><span
+                                                                class="var">encoding</span><span
+                                                                class="op">.</span><span
+                                                                class="var">attention_mask</span><span
+                                                                class="op">)</span>
+                                                        <span class="cm"># [1, 1, 1, 1, 1, 1, 1] ← 1 = real token, 0 =
+                                                                padding</span>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+
+                        <!-- encode_batch -->
+                        <div class="method-card">
+                                <div class="method-header">
+                                        <span class="method-name">tokenizer.encode_batch(texts)</span>
+                                        <span class="method-badge">multiple sentences</span>
+                                </div>
+                                <div class="method-body">
+                                        <p>Encodes a list of sentences simultaneously — much faster than calling
+                                                <code>encode()</code> in a loop.</p>
+                                        <div class="code-block">
+                                                <div class="code-header"><span class="code-dot r"></span><span
+                                                                class="code-dot y"></span><span
+                                                                class="code-dot g"></span> python</div>
+                                                <div class="code-body"><span class="var">sentences</span> <span
+                                                                class="op">= [</span>
+                                                        <span class="st">"Hello world"</span><span class="op">,</span>
+                                                        <span class="st">"I love machine learning"</span><span
+                                                                class="op">,</span>
+                                                        <span class="st">"How are you?"</span>
+                                                        <span class="op">]</span>
+
+                                                        <span class="var">encodings</span> <span class="op">=</span>
+                                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                                class="fn">encode_batch</span><span
+                                                                class="op">(</span><span
+                                                                class="var">sentences</span><span class="op">)</span>
+
+                                                        <span class="kw">for</span> <span class="var">enc</span> <span
+                                                                class="kw">in</span> <span
+                                                                class="var">encodings</span><span class="op">:</span>
+                                                        <span class="fn">print</span><span class="op">(</span><span
+                                                                class="var">enc</span><span class="op">.</span><span
+                                                                class="var">tokens</span><span class="op">)</span>
+
+                                                        <span class="cm"># ['[CLS]', 'hello', 'world', '[SEP]']</span>
+                                                        <span class="cm"># ['[CLS]', 'i', 'love', 'machine', 'learning',
+                                                                '[SEP]']</span>
+                                                        <span class="cm"># ['[CLS]', 'how', 'are', 'you', '?',
+                                                                '[SEP]']</span>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+
+                        <!-- decode -->
+                        <div class="method-card">
+                                <div class="method-header">
+                                        <span class="method-name">tokenizer.decode(ids)</span>
+                                        <span class="method-badge">ids → text</span>
+                                </div>
+                                <div class="method-body">
+                                        <p>Converts token IDs back to a readable string. Useful when the model outputs
+                                                IDs and you need text.</p>
+                                        <div class="code-block">
+                                                <div class="code-header"><span class="code-dot r"></span><span
+                                                                class="code-dot y"></span><span
+                                                                class="code-dot g"></span> python</div>
+                                                <div class="code-body"><span class="var">ids</span> <span class="op">=
+                                                                [</span><span class="nm">101</span><span
+                                                                class="op">,</span> <span class="nm">1045</span><span
+                                                                class="op">,</span> <span class="nm">2293</span><span
+                                                                class="op">,</span> <span class="nm">3019</span><span
+                                                                class="op">,</span> <span class="nm">102</span><span
+                                                                class="op">]</span>
+
+                                                        <span class="var">text</span> <span class="op">=</span> <span
+                                                                class="var">tokenizer</span><span
+                                                                class="op">.</span><span class="fn">decode</span><span
+                                                                class="op">(</span><span class="var">ids</span><span
+                                                                class="op">)</span>
+                                                        <span class="fn">print</span><span class="op">(</span><span
+                                                                class="var">text</span><span class="op">)</span>
+                                                        <span class="cm"># "i love natural"</span>
+
+                                                        <span class="cm"># Decode batch of sequences at once</span>
+                                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                                class="fn">decode_batch</span><span
+                                                                class="op">([[</span><span class="nm">101</span><span
+                                                                class="op">,</span> <span class="nm">1045</span><span
+                                                                class="op">,</span> <span class="nm">102</span><span
+                                                                class="op">],</span> <span class="op">[</span><span
+                                                                class="nm">101</span><span class="op">,</span> <span
+                                                                class="nm">2293</span><span class="op">,</span> <span
+                                                                class="nm">102</span><span class="op">]])</span>
+                                                        <span class="cm"># ["i", "love"]</span>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+
+                        <!-- add_special_tokens -->
+                        <div class="method-card">
+                                <div class="method-header">
+                                        <span class="method-name">tokenizer.add_special_tokens() / add_tokens()</span>
+                                        <span class="method-badge">vocabulary extension</span>
+                                </div>
+                                <div class="method-body">
+                                        <p>Add custom tokens to the vocabulary after training. Special tokens (like
+                                                [MASK]) are never split by the algorithm.</p>
+                                        <div class="code-block">
+                                                <div class="code-header"><span class="code-dot r"></span><span
+                                                                class="code-dot y"></span><span
+                                                                class="code-dot g"></span> python</div>
+                                                <div class="code-body"><span class="kw">from</span> <span
+                                                                class="var">tokenizers</span> <span
+                                                                class="kw">import</span> <span
+                                                                class="cls">AddedToken</span>
+
+                                                        <span class="cm"># Add special tokens — treated as single units,
+                                                                never split</span>
+                                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                                class="fn">add_special_tokens</span><span
+                                                                class="op">([</span><span
+                                                                class="st">"[MASK]"</span><span class="op">,</span>
+                                                        <span class="st">"[PAD]"</span><span class="op">])</span>
+
+                                                        <span class="cm"># Add domain-specific regular tokens</span>
+                                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                                class="fn">add_tokens</span><span
+                                                                class="op">([</span><span
+                                                                class="st">"&lt;URL&gt;"</span><span class="op">,</span>
+                                                        <span class="st">"&lt;EMAIL&gt;"</span><span class="op">,</span>
+                                                        <span class="st">"&lt;CODE&gt;"</span><span class="op">])</span>
+
+                                                        <span class="cm"># Check the ID of any token</span>
+                                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                                class="fn">token_to_id</span><span
+                                                                class="op">(</span><span class="st">"[MASK]"</span><span
+                                                                class="op">)</span> <span class="cm"># → e.g. 103</span>
+                                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                                class="fn">id_to_token</span><span
+                                                                class="op">(</span><span class="nm">103</span><span
+                                                                class="op">)</span> <span class="cm"># → "[MASK]"</span>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+
+                <hr>
+
+                <!-- SECTION 6: ENCODING OBJECT -->
+                <div class="section">
+                        <div class="part-label">Section 6</div>
+                        <h2>The Encoding Object — What encode() Returns</h2>
+
+                        <p><code>encode()</code> doesn't just return IDs. It returns a rich object with everything the
+                                model needs.</p>
+
+                        <div class="code-block">
+                                <div class="code-header"><span class="code-dot r"></span><span
+                                                class="code-dot y"></span><span class="code-dot g"></span> python ·
+                                        encoding_object.py</div>
+                                <div class="code-body"><span class="var">enc</span> <span class="op">=</span> <span
+                                                class="var">tokenizer</span><span class="op">.</span><span
+                                                class="fn">encode</span><span class="op">(</span><span class="st">"I
+                                                love NLP"</span><span class="op">)</span>
+
+                                        <span class="var">enc</span><span class="op">.</span><span
+                                                class="var">tokens</span> <span class="cm"># ['[CLS]', 'i', 'love',
+                                                'nl', '##p', '[SEP]']</span>
+                                        <span class="var">enc</span><span class="op">.</span><span
+                                                class="var">ids</span> <span class="cm"># [101, 1045, 2293, 17953, 2361,
+                                                102]</span>
+                                        <span class="var">enc</span><span class="op">.</span><span
+                                                class="var">attention_mask</span> <span class="cm"># [1, 1, 1, 1, 1, 1]
+                                                ← all real tokens</span>
+                                        <span class="var">enc</span><span class="op">.</span><span
+                                                class="var">type_ids</span> <span class="cm"># [0, 0, 0, 0, 0, 0] ←
+                                                sentence A=0, B=1 for pairs</span>
+                                        <span class="var">enc</span><span class="op">.</span><span
+                                                class="var">offsets</span> <span class="cm">#
+                                                [(0,0),(0,1),(2,6),(7,9),(9,10),(0,0)] ← char positions</span>
+                                        <span class="var">enc</span><span class="op">.</span><span
+                                                class="var">special_tokens_mask</span> <span class="cm"># [1, 0, 0, 0,
+                                                0, 1] ← 1=special, 0=normal</span>
+                                </div>
+                        </div>
+
+                        <div class="two-col">
+                                <div class="card">
+                                        <h3>ids</h3>
+                                        <p style="font-size:0.87rem; color:var(--muted);">Integer IDs fed directly into
+                                                the model's embedding layer. Each ID maps to a row in the embedding
+                                                matrix.</p>
+                                </div>
+                                <div class="card">
+                                        <h3>attention_mask</h3>
+                                        <p style="font-size:0.87rem; color:var(--muted);">1 = real token, 0 = padding.
+                                                Used by the transformer to ignore padded positions in batches of
+                                                different-length sequences.</p>
+                                </div>
+                                <div class="card">
+                                        <h3>offsets</h3>
+                                        <p style="font-size:0.87rem; color:var(--muted);">Character-level (start, end)
+                                                position of each token in the original string. Essential for NER and
+                                                span extraction tasks.</p>
+                                </div>
+                                <div class="card">
+                                        <h3>type_ids</h3>
+                                        <p style="font-size:0.87rem; color:var(--muted);">0 for sentence A, 1 for
+                                                sentence B. Used in BERT tasks like NLI or QA where two sentences are
+                                                paired.</p>
+                                </div>
+                        </div>
+                </div>
+
+                <hr>
+
+                <!-- SECTION 7: WORDPIECE EXAMPLE -->
+                <div class="section">
+                        <div class="part-label">Section 7</div>
+                        <h2>Building a WordPiece Tokenizer (BERT Style)</h2>
+
+                        <div class="code-block">
+                                <div class="code-header"><span class="code-dot r"></span><span
+                                                class="code-dot y"></span><span class="code-dot g"></span> python ·
+                                        bert_tokenizer.py</div>
+                                <div class="code-body"><span class="kw">from</span> <span class="var">tokenizers</span>
+                                        <span class="kw">import</span> <span class="cls">Tokenizer</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.models</span> <span
+                                                class="kw">import</span> <span class="cls">WordPiece</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.normalizers</span>
+                                        <span class="kw">import</span> <span class="cls">BertNormalizer</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.pre_tokenizers</span>
+                                        <span class="kw">import</span> <span class="cls">BertPreTokenizer</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.trainers</span> <span
+                                                class="kw">import</span> <span class="cls">WordPieceTrainer</span>
+                                        <span class="kw">from</span> <span class="var">tokenizers.processors</span>
+                                        <span class="kw">import</span> <span class="cls">BertProcessing</span>
+
+                                        <span class="cm"># 1. Create tokenizer with WordPiece algorithm</span>
+                                        <span class="var">tokenizer</span> <span class="op">=</span> <span
+                                                class="cls">Tokenizer</span><span class="op">(</span><span
+                                                class="cls">WordPiece</span><span class="op">(</span>unk_token<span
+                                                class="op">=</span><span class="st">"[UNK]"</span><span
+                                                class="op">))</span>
+
+                                        <span class="cm"># 2. Normalize: lowercase + remove accents (BERT
+                                                standard)</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="var">normalizer</span> <span class="op">=</span> <span
+                                                class="cls">BertNormalizer</span><span class="op">()</span>
+
+                                        <span class="cm"># 3. Pre-tokenize: whitespace + punctuation split</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="var">pre_tokenizer</span> <span class="op">=</span> <span
+                                                class="cls">BertPreTokenizer</span><span class="op">()</span>
+
+                                        <span class="cm"># 4. Train</span>
+                                        <span class="var">trainer</span> <span class="op">=</span> <span
+                                                class="cls">WordPieceTrainer</span><span class="op">(</span>
+                                        vocab_size<span class="op">=</span><span class="nm">30522</span><span
+                                                class="op">,</span> <span class="cm"># BERT's exact vocab size</span>
+                                        special_tokens<span class="op">=[</span><span class="st">"[UNK]"</span><span
+                                                class="op">,</span> <span class="st">"[CLS]"</span><span
+                                                class="op">,</span> <span class="st">"[SEP]"</span><span
+                                                class="op">,</span> <span class="st">"[PAD]"</span><span
+                                                class="op">,</span> <span class="st">"[MASK]"</span><span
+                                                class="op">]</span>
+                                        <span class="op">)</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="fn">train</span><span class="op">([</span><span
+                                                class="st">"data.txt"</span><span class="op">],</span> <span
+                                                class="var">trainer</span><span class="op">)</span>
+
+                                        <span class="cm"># 5. Post-process: auto-add [CLS] and [SEP]</span>
+                                        <span class="var">tokenizer</span><span class="op">.</span><span
+                                                class="var">post_processor</span> <span class="op">=</span> <span
+                                                class="cls">BertProcessing</span><span class="op">(</span>
+                                        <span class="op">(</span><span class="st">"[SEP]"</span><span
+                                                class="op">,</span> <span class="var">tokenizer</span><span
+                                                class="op">.</span><span class="fn">token_to_id</span><span
+                                                class="op">(</span><span class="st">"[SEP]"</span><span
+                                                class="op">)),</span>
+                                        <span class="op">(</span><span class="st">"[CLS]"</span><span
+                                                class="op">,</span> <span class="var">tokenizer</span><span
+                                                class="op">.</span><span class="fn">token_to_id</span><span
+                                                class="op">(</span><span class="st">"[CLS]"</span><span
+                                                class="op">)),</span>
+                                        <span class="op">)</span>
+
+                                        <span class="cm"># 6. Encode</span>
+                                        <span class="var">enc</span> <span class="op">=</span> <span
+                                                class="var">tokenizer</span><span class="op">.</span><span
+                                                class="fn">encode</span><span class="op">(</span><span
+                                                class="st">"playing football is fun"</span><span class="op">)</span>
+                                        <span class="fn">print</span><span class="op">(</span><span
+                                                class="var">enc</span><span class="op">.</span><span
+                                                class="var">tokens</span><span class="op">)</span>
+                                        <span class="cm"># ['[CLS]', 'playing', 'football', 'is', 'fun', '[SEP]']</span>
+
+                                        <span class="cm"># WordPiece marks continuation subwords with ##</span>
+                                        <span class="var">enc2</span> <span class="op">=</span> <span
+                                                class="var">tokenizer</span><span class="op">.</span><span
+                                                class="fn">encode</span><span class="op">(</span><span
+                                                class="st">"unbelievable"</span><span class="op">)</span>
+                                        <span class="fn">print</span><span class="op">(</span><span
+                                                class="var">enc2</span><span class="op">.</span><span
+                                                class="var">tokens</span><span class="op">)</span>
+                                        <span class="cm"># ['[CLS]', 'un', '##believable', '[SEP]']</span>
+                                </div>
+                        </div>
+
+                        <div class="callout">
+                                <strong>The <code>##</code> prefix</strong> is WordPiece's way of marking that a subword
+                                is a continuation of the previous one — not the start of a new word. So <code>un</code>
+                                + <code>##believable</code> = "unbelievable".
+                        </div>
+                </div>
+
+                <hr>
+
+                <!-- SECTION 8: SUMMARY -->
+                <div class="section">
+                        <div class="part-label">Section 8</div>
+                        <h2>Summary — Everything at a Glance</h2>
+
+                        <table>
+                                <tr>
+                                        <th>Stage</th>
+                                        <th>Class</th>
+                                        <th>What it does</th>
+                                </tr>
+                                <tr>
+                                        <td>Normalization</td>
+                                        <td><code>Lowercase, BertNormalizer, StripAccents</code></td>
+                                        <td>Clean and standardize raw text</td>
+                                </tr>
+                                <tr>
+                                        <td>Pre-tokenization</td>
+                                        <td><code>Whitespace, BertPreTokenizer, ByteLevel</code></td>
+                                        <td>Initial split before the algorithm</td>
+                                </tr>
+                                <tr>
+                                        <td>Algorithm</td>
+                                        <td><code>BPE, WordPiece, Unigram</code></td>
+                                        <td>Learn and apply the subword vocabulary</td>
+                                </tr>
+                                <tr>
+                                        <td>Post-processing</td>
+                                        <td><code>BertProcessing, TemplateProcessing</code></td>
+                                        <td>Add special tokens [CLS], [SEP], etc.</td>
+                                </tr>
+                        </table>
+
+                        <table style="margin-top:16px;">
+                                <tr>
+                                        <th>Method</th>
+                                        <th>Input</th>
+                                        <th>Output</th>
+                                </tr>
+                                <tr>
+                                        <td><code>train(files, trainer)</code></td>
+                                        <td>Text files</td>
+                                        <td>Learned vocabulary</td>
+                                </tr>
+                                <tr>
+                                        <td><code>encode(text)</code></td>
+                                        <td>One string</td>
+                                        <td>Encoding object (ids, tokens, mask…)</td>
+                                </tr>
+                                <tr>
+                                        <td><code>encode_batch(texts)</code></td>
+                                        <td>List of strings</td>
+                                        <td>List of Encoding objects</td>
+                                </tr>
+                                <tr>
+                                        <td><code>decode(ids)</code></td>
+                                        <td>List of ints</td>
+                                        <td>String</td>
+                                </tr>
+                                <tr>
+                                        <td><code>save(path)</code></td>
+                                        <td>File path</td>
+                                        <td>JSON file on disk</td>
+                                </tr>
+                                <tr>
+                                        <td><code>from_file(path)</code></td>
+                                        <td>JSON file path</td>
+                                        <td>Loaded Tokenizer</td>
+                                </tr>
+                                <tr>
+                                        <td><code>add_special_tokens()</code></td>
+                                        <td>List of strings</td>
+                                        <td>Extended vocabulary</td>
+                                </tr>
+                        </table>
+
+                        <div class="callout green" style="margin-top:20px;">
+                                <strong>Key takeaway:</strong> Configure once (normalizer → pre-tokenizer → algorithm →
+                                post-processor), train once, then just call <code>encode()</code> — the full pipeline
+                                runs automatically every time.
+                        </div>
+                </div>
+
+        </div>
+</body>
+
+</html>
